@@ -30,21 +30,21 @@ done
 
 python manage.py collectstatic --noinput
 
-# Start Celery Worker
-gosu "$PUID":"$PGID" celery -A bragibooks_proj worker --loglevel=info --concurrency ${CELERY_WORKERS:-1} -E &
+# Start DB task worker
+gosu "$PUID":"$PGID" python manage.py db_worker &
 
 # If you want to use the admin panel for debugging
 # python manage.py createsuperuser --noinput
 
 # Start gunicorn server
-gosu "$PUID":"$PGID" gunicorn bragibooks_proj.wsgi \
-    --bind 0.0.0.0:8000 \
-    --timeout 1200 \
-    --worker-tmp-dir /dev/shm \
-    --workers 2 \
-    --threads 4 \
-    --worker-class gthread \
-    --enable-stdio-inheritance
+#gosu "$PUID":"$PGID" gunicorn bragibooks_proj.wsgi \
+#    --bind 0.0.0.0:8000 \
+#    --timeout 1200 \
+#    --worker-tmp-dir /dev/shm \
+#    --workers 2 \
+#    --threads 4 \
+#    --worker-class gthread \
+#    --enable-stdio-inheritance
 
 # for debug
-#python manage.py runserver 0.0.0.0:8000
+python manage.py runserver 0.0.0.0:8000

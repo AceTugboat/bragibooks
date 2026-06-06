@@ -4,6 +4,10 @@ Django settings for bragibooks_proj project.
 
 import os
 
+from django.conf.global_settings import LOGIN_URL
+
+APP_NAME = "Bragi Books"
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -31,6 +35,7 @@ ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'importer',
+    'django_tasks_db',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -85,6 +90,10 @@ DEFAULT_AUTO_FIELD='django.db.models.AutoField'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
+
+LOGIN_URL = 'login'  # Redirect to this URL if not logged in
+LOGIN_REDIRECT_URL = 'home'  # Redirect to this URL after login
+LOGOUT_REDIRECT_URL = 'login'  # Redirect to this URL after logout
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -145,5 +154,9 @@ LOGGING = {
 }
 
 
-# Celery broker 
-CELERY_BROKER_URL = os.environ.get("BROKER_URL", f"sqla+sqlite:///{os.path.join(CONFIG_DIR, 'db.sqlite3')}")
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks_db.DatabaseBackend",
+        "QUEUES": ["default"],
+    }
+}
