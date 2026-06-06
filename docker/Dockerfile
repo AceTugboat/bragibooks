@@ -10,15 +10,18 @@ ENV PYTHONUNBUFFERED=1
 # Setup environment variable
 ENV APP_HOME=/home/app/web
 
-# Where your code lives  
+# Install into system Python so m4b-merge packages remain accessible
+ENV UV_SYSTEM_PYTHON=1
+
+# Copy uv binary from official image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Where your code lives
 WORKDIR $APP_HOME
 
-# Copy the necessary files to the container
-COPY requirements.txt .
-
-# Run this command to install all dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Copy lockfile and project metadata, then install dependencies
+COPY pyproject.toml uv.lock .
+RUN uv sync --frozen --no-install-project
 
 # Copy whole project to your docker home directory.
 COPY bragibooks_proj $APP_HOME/bragibooks_proj/
