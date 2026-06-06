@@ -38,7 +38,7 @@ jobs:
               uses: docker/metadata-action@60a0d343a0d8a18aedee9d34e62251f752153bdb
               with:
                   images: |
-                      djdembeck/bragibooks
+                      ${{ secrets.DOCKER_USERNAME }}/bragibooks
                       ghcr.io/${{ github.repository }}
 
             - name: Build and push Docker images
