@@ -1,0 +1,21 @@
+services:
+  bragi:
+    image: bragibooks
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    container_name: bragibooks
+    environment:
+      - LOG_LEVEL=DEBUG
+      - DEBUG=True
+      - UID=1001
+      - GID=1001
+    volumes:
+      - $HOME/Projects/bragibooks:/home/app/web
+      - $HOME/Projects/demo/config:/config
+      - $HOME/Projects/demo/completed/audiobooks:/input
+      - $HOME/Projects/demo/output/audiobooks:/output
+      - $HOME/Projects/demo/converted:/done
+    ports:
+      - 8000:8000
+    restart: unless-stopped
