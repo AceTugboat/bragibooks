@@ -3,8 +3,8 @@
 {% for item in contents %}
     {% with id=item|generate_id %}
         {% if item|is_directory %}
-            <label class="panel-block folder" id="{{ id }}" folder-id="{{folder_id}}" style="display: {{ display }};">
-                <div>
+            <label class="panel-block folder accordion">
+                <span>
                     <input type="checkbox" name="input_dir" value="{{ item }}">
                     {% for i in depth|get_range %}
                         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -13,26 +13,66 @@
                         <i class="fas fa-folder" aria-hidden="false"></i>
                     </span>
                     {{item|basename}}
-                </div>
+                </span>
                 <span class="arrow mr-2 is-medium">
-                    <i class="fas fa-lg fa-angle-right" id="{{ id }}" ></i>
+                    <i class="fas fa-lg fa-angle-right" ></i>
                 </span>
             </label>
 
-            {% render_directory path=item folder_id=id depth=depth|add_one%}
-        
+            <div class="panel-block folder accordion-panel" id={{ id }} parentId={{ parent_id }}>
+                {% render_directory path=item parent_id=id depth=depth|add_one %}
+
+{#                <label class="panel-block folder accordion" >#}
+{#                    <span>#}
+{#                        <input type="checkbox" name="input_dir">#}
+{#                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#}
+{#                        <span class="panel-icon">#}
+{#                            <i class="fas fa-folder" aria-hidden="false"></i>#}
+{#                        </span>#}
+{#                        Test Directory#}
+{#                    </span>#}
+{#                    <span class="arrow mr-2 is-medium">#}
+{#                        <i class="fas fa-lg fa-angle-right" ></i>#}
+{#                    </span>#}
+{#                </label>#}
+{##}
+{#                <div class="panel-block accordion-panel" id=2 parentId=1>#}
+{#                    <p>This is a test</p>#}
+{#                </div>#}
+
+            </div>
+{##}
+{#            <label class="panel-block folder accordion" id="{{ id }}" folder-id="{{folder_id}}" style="display: {{ display }};">#}
+{#                <div>#}
+{#                    <input type="checkbox" name="input_dir" value="{{ item }}">#}
+{#                    {% for i in depth|get_range %}#}
+{#                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#}
+{#                    {% endfor %}#}
+{#                    <span class="panel-icon">#}
+{#                        <i class="fas fa-folder" aria-hidden="false"></i>#}
+{#                    </span>#}
+{#                    {{item|basename}}#}
+{#                </div>#}
+{#                <span class="arrow mr-2 is-medium">#}
+{#                    <i class="fas fa-lg fa-angle-right" id="{{ id }}" ></i>#}
+{#                </span>#}
+{#            </label>#}
+{##}
+{#            <div class="panel-block accordion-panel" id="accordion-{{ id }}">#}
+{#                {% render_directory path=item parent_id=id depth=depth|add_one %}#}
+{#            </div>#}
         {% else %}
 
-        <label class="panel-block file" style="display: {{ display }};" id="{{ id }}" folder-id="{{ folder_id }}">
-            <input type="checkbox" name="input_dir" value="{{ item }}">
-            {% for i in depth|get_range %}
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            {% endfor %}
-            <span class="panel-icon">
-                <i class="fas fa-file" aria-hidden="false"></i>
-            </span>
-            {{item|basename}}
-        </label>
+{#        <label class="panel-block file" style="display: {{ display }};" id="{{ id }}" folder-id="{{ folder_id }}">#}
+{#            <input type="checkbox" name="input_dir" value="{{ item }}">#}
+{#            {% for i in depth|get_range %}#}
+{#                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#}
+{#            {% endfor %}#}
+{#            <span class="panel-icon">#}
+{#                <i class="fas fa-file" aria-hidden="false"></i>#}
+{#            </span>#}
+{#            {{item|basename}}#}
+{#        </label>#}
 
         {% endif %}
     {% endwith %}

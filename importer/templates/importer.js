@@ -1,24 +1,68 @@
-function expandFolder(folderId) {
-    // Select the arrow element
-    const arrow = document.querySelector(`.folder[id^='${folderId}'] .arrow i`);
-
-    // Toggle the rotation class on the arrow element
+function expandFolder(arrow) {
+    // toggle rotate the current arrow
     arrow.classList.toggle('fa-rotate-90');
 
-    // Select all items in the folder
-    const items = document.querySelectorAll(`.panel-block[folder-id^='${folderId}']`);
+    // get the accordion element for the clicked arrow
+    const accordion = arrow.closest('label');
+    console.log('accordion', accordion)
 
-    // Toggle the display style of each item
-    items.forEach(item => {
-        item.style.display = item.style.display === 'none' ? '' : 'none';
-    });
+    // get the accordion-panel element for the clicked accordion
+    const accordion_panel = accordion.nextElementSibling;
+    console.log('accordion_panel', accordion_panel)
+
+    // if max height is set on current accordion panel
+    if (accordion_panel.style.maxHeight) {
+        resetNestedPanelHeight(accordion_panel)
+    } else { // if max height is not set
+        increaseNestedPanelHeight(accordion_panel);
+    }
+}
+
+function increaseNestedPanelHeight(accordion_panel) {
+    console.log('increaseNestedPanelHeight', accordion_panel)
+    
+    // add the current panel height to the max height of all the parent accordion-panel elements
+    accordion_panel.style.maxHeight = accordion_panel.scrollHeight + "px";
+
+    // get the parent id for the clicked accordion
+    const parentId = accordion_panel.getAttribute('parentId');
+
+    // get the accordion whose id matches the parent id
+    const parentAccordion = document.getElementById(parentId);
+
+    // update the parent accordion panel height
+    if (parentAccordion && parentAccordion.style.maxHeight) {
+        parentAccordion.style.maxHeight = parentAccordion.scrollHeight + accordion_panel.scrollHeight + "px";
+        increaseNestedPanelHeight(parentAccordion);
+    }
+}
+
+function resetNestedPanelHeight(accordion_panel){
+    console.log('resetNestedPanelHeight', accordion_panel)
+
+    // reset the height of the current accordion panel
+    accordion_panel.style.maxHeight = null;
+    accordion_panel.querySelector('.arrow i')?.classList.remove('fa-rotate-90');
+
+    // get the parent id for the clicked accordion
+    const panelId = accordion_panel.getAttribute('id');
+
+    // get the accordions whose parentId matches this id
+    const childAccordions = document.querySelectorAll(`.accordion-panel[parentId='${panelId}']`);
+
+    // reset the height of all the child accordions
+    childAccordions.forEach(
+        childAccordion => {
+            resetNestedPanelHeight(childAccordion);
+        }
+    );
 }
 
 const arrows = document.querySelectorAll(".arrow i");
 arrows.forEach(arrow => {
     arrow.addEventListener("click", (event) => {
         event.preventDefault();
-        expandFolder(arrow.id)
+        expandFolder(arrow)
     });
 });
 

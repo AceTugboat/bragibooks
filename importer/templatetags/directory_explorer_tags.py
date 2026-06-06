@@ -41,19 +41,24 @@ def directory_contents(path):
     """
     Returns a list of files and subdirectories in the given path.
     """
+    if not path.is_dir():
+        return []
+
+    print(f"--> directory_contents: {path}: {list(Path(path).iterdir())}")
     return sorted(Path(path).iterdir(), key=os.path.getmtime, reverse=True)
 
 
 @register.inclusion_tag("directory_contents.html")
-def render_directory(path, folder_id, depth):
+def render_directory(path, parent_id, depth):
     """
     Renders a directory and its contents as a nested list.
     """
+    print(f"{path:} {parent_id:} {depth:}")
     contents = directory_contents(path)
     return {
-        "path": path,
+        # "path": path,
         "contents": contents,
-        "display": "none" if int(depth) > 0 else "",
-        "folder_id": f"{folder_id}",
+        # "display": "none" if int(depth) > 0 else "",
+        "parent_id": f"{parent_id}",
         "depth": depth,
     }
