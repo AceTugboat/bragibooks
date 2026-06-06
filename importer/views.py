@@ -7,6 +7,9 @@ from pathlib import Path
 import requests
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import User
 from django.http import HttpRequest, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import redirect, render
 from django.views.generic import TemplateView, View
@@ -19,7 +22,7 @@ from utils.merge import create_book
 from utils.search_tools import ScoreTool, SearchTool
 
 # Forms import
-from .forms import SettingForm
+from .forms import SettingForm, LoginForm, RegisterForm
 # Models import
 from .models import Book, Setting, StatusChoices
 from .tasks import m4b_merge_task
@@ -34,7 +37,7 @@ else:
     rootdir = f"{str(Path.home())}/input"
 
 
-class ImportView(TemplateView):
+class ImportView(LoginRequiredMixin, TemplateView):
     template_name = "importer.html"
 
     def get_context_data(self, **kwargs):
@@ -57,20 +60,20 @@ class ImportView(TemplateView):
 
         if not (input_dir := request.POST.getlist('input_dir')):
             messages.error(request, "You must select content to import")
-            return redirect("import")
+            return redirect("home")
 
         request.session['input_dir'] = input_dir
         return redirect("match")
 
 
-class MatchView(TemplateView):
+class MatchView(LoginRequiredMixin, TemplateView):
     template_name = "match.html"
 
-    def get(self, request):
+    def get(self, request, **kwargs):
         # Redirect if this is a new session
         if 'input_dir' not in request.session:
             logger.debug("No session data found, returning to import page")
-            return redirect("import")
+            return redirect("home")
 
         return render(request, self.template_name, self.get_context_data())
 
@@ -80,7 +83,7 @@ class MatchView(TemplateView):
         context = []
         for this_dir in self.request.session['input_dir']:
             try:
-                book = Book.objects.get(src_path=f"{this_dir}")
+                book = Book.objects.get()
             except Book.DoesNotExist:
                 context.append({'src_path': this_dir})
             else:
@@ -123,7 +126,7 @@ class MatchView(TemplateView):
             created_books = True
 
             logger.info(f"Adding book {book} to processing queue")
-            m4b_merge_task.delay(asin)
+            m4b_merge_task.enqueue(asin)
         
         if created_books:
             return redirect("books")
@@ -131,7 +134,7 @@ class MatchView(TemplateView):
             return redirect("match")
 
 
-class AsinSearch(View):
+class AsinSearch(LoginRequiredMixin, View):
     def get(self, request):
         accepted_keywords = ["media_dir", "title", "author", "keywords"]
 
@@ -202,10 +205,10 @@ class AsinSearch(View):
         return helper.parse_api_response(request.json())
 
 
-class BookListView(TemplateView):
+class BookListView(LoginRequiredMixin, TemplateView):
     template_name = "book_tabs.html"
 
-    def get(self, request):
+    def get(self, request, **kwargs):
         done_books = Book.objects.filter(status__status=StatusChoices.DONE).order_by(
             '-created_at')
         processing_books = Book.objects.filter(
@@ -220,7 +223,7 @@ class BookListView(TemplateView):
     def get_context_data(self, **kwargs) -> dict:
         context = {"default_view": "done"}
 
-        redirect_url = self.request.META.get('HTTP_REFERER', '')
+        redirect_url = self.request.META.get('HTTP_REFERER')
         if 'match' in redirect_url:
             context.update({"default_view": "processing"})
 
@@ -246,7 +249,7 @@ class BookListView(TemplateView):
         return length_arr
 
 
-class SettingView(TemplateView):
+class SettingView(LoginRequiredMixin, TemplateView):
     template_name = "setting.html"
 
     def get_context_data(self, **kwargs):
@@ -291,7 +294,7 @@ class SettingView(TemplateView):
                         messages.error(request, v)
                     return redirect("setting")
             if not existing_settings:
-                settings = Setting.objects.create(
+                setting = Setting.objects.create(
                     api_url=form_data['api_url'],
                     completed_directory=form_data['completed_directory'],
                     input_directory=form_data['input_directory'],
@@ -299,7 +302,7 @@ class SettingView(TemplateView):
                     output_directory=form_data['output_directory'],
                     output_scheme=form_data['output_scheme']
                 )
-                settings.save()
+                setting.save()
             else:
                 es = existing_settings
                 es.api_url = form_data['api_url']
@@ -310,7 +313,52 @@ class SettingView(TemplateView):
                 es.output_scheme = form_data['output_scheme']
                 es.save()
 
-            return redirect("import")
+            return redirect("home")
 
         messages.error(request, "Form is invalid")
         return redirect("setting")
+
+
+class LoginView(View):
+    def get(self, request):
+        if request.user.is_authenticated:
+            return redirect('home')
+
+        if not User.objects.filter(is_superuser=True).exists():
+            form = RegisterForm()
+            template_name = 'register.html'
+        else:
+            form = LoginForm()
+            template_name = 'login.html'
+        return render(request, template_name, {'form': form, 'app_name': settings.APP_NAME})
+
+    def post(self, request):
+        if not User.objects.filter(is_superuser=True).exists():
+            form = RegisterForm(request.POST)
+            if form.is_valid():
+                user = form.save(commit=False)
+                user.set_password(form.cleaned_data['password'])
+                user.is_superuser = True
+                user.is_staff = True
+                user.save()
+                return redirect('login')
+
+            return render(request, 'register.html', {'form': form, 'app_name': settings.APP_NAME})
+
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect('home')
+            else:
+                form.add_error(None, 'Invalid username or password')
+        return render(request, 'login.html', {'form': form, 'app_name': settings.APP_NAME})
+
+
+class LogoutView(View):
+    def get(self, request):
+        logout(request)
+        return redirect('login')
