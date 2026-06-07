@@ -1,6 +1,6 @@
 <p align="center">
   <a href="" rel="noopener">
- <img width=200px height=200px src="../assets/logos/logo.png?raw=true" alt="Project logo"></a>
+  <img width=200px height=200px src="../assets/logos/logo.png?raw=true" alt="Project logo"></a>
 </p>
 
 <h3 align="center">Bragibooks</h3>
@@ -8,109 +8,87 @@
 <div align="center">
 
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![GitHub Issues](https://img.shields.io/github/issues/djdembeck/bragibooks.svg)](https://github.com/djdembeck/bragibooks/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/djdembeck/bragibooks.svg)](https://github.com/djdembeck/bragibooks/pulls)
-[![License](https://img.shields.io/github/license/djdembeck/bragibooks)](https://github.com/djdembeck/bragibooks/blob/develop/LICENSE)
-[![Docker](https://github.com/djdembeck/bragibooks/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/djdembeck/bragibooks/actions/workflows/docker-publish.yml)
-[![Docker Pulls](https://img.shields.io/docker/pulls/djdembeck/bragibooks)](https://hub.docker.com/r/djdembeck/bragibooks)
-[![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/djdembeck/bragibooks)](https://hub.docker.com/r/djdembeck/bragibooks)
-[![Docker Image Version (latest by date)](https://img.shields.io/docker/v/djdembeck/bragibooks)](https://hub.docker.com/r/djdembeck/bragibooks)
-[![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/djdembeck/bragibooks)](https://www.codefactor.io/repository/github/djdembeck/bragibooks)
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
+[![GitHub Issues](https://img.shields.io/github/issues/AceTugboat/bragibooks.svg)](https://github.com/AceTugboat/bragibooks/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/AceTugboat/bragibooks.svg)](https://github.com/AceTugboat/bragibooks/pulls)
+[![License](https://img.shields.io/github/license/AceTugboat/bragibooks)](https://github.com/AceTugboat/bragibooks/blob/main/LICENSE)
+[![Docker](https://github.com/AceTugboat/bragibooks/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/AceTugboat/bragibooks/actions/workflows/docker-publish.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/acetugboat/bragibooks)](https://hub.docker.com/r/acetugboat/bragibooks)
+[![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/acetugboat/bragibooks)](https://hub.docker.com/r/acetugboat/bragibooks)
+[![Docker Image Version (latest by date)](https://img.shields.io/docker/v/acetugboat/bragibooks)](https://hub.docker.com/r/acetugboat/bragibooks)
 
 </div>
 
 ---
 
-<p align="center"> An audiobook library cleanup & management app, written as a frontend for web use of <a href="https://github.com/djdembeck/m4b-merge">m4b-merge</a>.
-    <br> 
-</p>
+<p align="center">An audiobook library management app with a React frontend, powered by <a href="https://github.com/djdembeck/m4b-merge">m4b-merge</a>.</p>
 
-## 📝 Table of Contents
+## Table of Contents
 
-- [About](#about)
+- [About & Usage](#about)
 - [Getting Started](#getting_started)
-- [Usage](#usage)
-- [Built Using](#built_using)
-- [Contributing](../CONTRIBUTING.md)
-- [Authors](#authors)
-- [Contributors](#contributors)
+- [Development](#development)
 
-## 🧐 About <a name = "about"></a>
+## About & Usage <a name = "about"></a>
 
 **Bragi - (god of poetry in [Norse mythology](https://en.wikipedia.org/wiki/Bragi)):**
-Bragibooks provides a minimal and straightforward webserver that you can run remotely or locally on your server. Since Bragibooks runs in a docker, you no longer need to install dependencies on whichever OS you are on. You can
 
-Some basics of what Bragi does:
-- Merge multiple files
-- Convert mp3(s)
-- Cleanup existing data on an m4b file
-- More features on [m4b-merge's help page](https://github.com/djdembeck/m4b-merge)
+Bragibooks is a self-hosted audiobook management tool. It provides a React web interface for merging, converting, and tagging audiobook files using metadata from Audible. Since it runs in Docker, no local dependencies are required.
 
-### Screens
+The workflow is a simple 3-step process:
 
-Folder/file selection             |  ASIN input
-:-------------------------:|:-------------------------:
-![file-selection](../assets/screens/file_picker.png)  |  ![asin-auto-search](../assets/screens/auto_search_panel.png)
+1. **Select input** — browse your audio files and select what you want to process
+2. **Match ASIN** — Bragibooks auto-searches Audible for metadata. If the match is wrong, use the custom search to find the correct title
+3. **Process** — submit for processing and wait. This runs in the background and can take anywhere from seconds to hours depending on file size. Track progress on the Books page
 
-Folder/file selection             |  Post-proccess overview
-:-------------------------:|:-------------------------:
-![asin-custom-search](../assets/screens/custom_search.png)  |  ![post-process](../assets/screens/processing_panel.png)
-
-## 🏁 Getting Started <a name = "getting_started"></a>
-
-You can either install this project directly or run it prepackaged in Docker.
+## Getting Started <a name = "getting_started"></a>
 
 ### Prerequisites
 
 #### Docker
-- All prerequisites are included in the image.
+All prerequisites are included in the image.
 
-#### Direct (Gunicorn)
-- You'll need to install m4b-tool and it's dependants from [the project's readme](https://github.com/sandreas/m4b-tool#installation)
-- Run `uv sync` from this project's directory (install [uv](https://github.com/astral-sh/uv) if you don't have it).
+#### Direct install
+- Install m4b-tool and its dependencies from [the project's readme](https://github.com/sandreas/m4b-tool#installation)
+- Install [uv](https://github.com/astral-sh/uv) and run `uv sync`
+- Install [Node.js](https://nodejs.org/) 22.12+ or 20.19+ for the frontend
 
 ### Installing
 
 #### Docker
-To run Bragibooks as a container, you need to pass some paramaters in the run command:
 
-The container entrypoint accepts a mode argument that controls what it runs:
+The container entrypoint accepts a mode argument:
 
   | Mode | Description |
   | :----: | --- |
   | `prod` | Gunicorn production server (default) |
-  | `worker` | Task queue worker — can be run in a separate container |
+  | `worker` | Task queue worker — run in a separate container |
   | `dev` | Django development server |
 
   | Parameter | Function |
   | :----: | --- |
-  | `-v /path/to/input:/input` | Input folder |
-  | `-v /path/to/output:/output` | Output folder |
+  | `-v /path/to/input:/downloads` | Input folder |
+  | `-v /path/to/output:/audiobooks` | Output folder |
   | `-v /appdata/bragibooks/config:/config` | Persistent config storage |
-  | `-p 8000:8000/tcp` | Port for your browser to use |
-  | `-e LOG_LEVEL=WARNING` | Choose any [logging level](https://www.loggly.com/ultimate-guide/python-logging-basics/) |
-  | `-e DEBUG=False` | Turn django debug on or off (default False) |
-  | `-e UID=99` | User ID to run the container as (default 99)|
-  | `-e GID=100` | Group ID to run the container as (default 100)|
-  | `-e RUN_WORKER=true` | Run the task queue worker inside this container (default false)|
-  | `-e CSRF_TRUSTED_ORIGINS=https://bragibooks.mydomain.com` | Domains to trust if bragibooks is hosted behind a reverse proxy. |
+  | `-p 8000:8000/tcp` | Port for your browser |
+  | `-e LOG_LEVEL=WARNING` | Any [logging level](https://www.loggly.com/ultimate-guide/python-logging-basics/) |
+  | `-e DEBUG=False` | Django debug mode (default False) |
+  | `-e UID=99` | User ID to run the container as (default 99) |
+  | `-e GID=100` | Group ID to run the container as (default 100) |
+  | `-e RUN_WORKER=true` | Run the task queue worker inside this container (default false) |
+  | `-e HOSTED_DOMAIN=bragibooks.mydomain.com` | Set for production deployments behind a reverse proxy |
 
+Single container (web + worker):
 
-Which all together should look like:
+	docker run --rm -d --name bragibooks -v /path/to/input:/downloads -v /path/to/output:/audiobooks -v /appdata/bragibooks/config:/config -p 8000:8000/tcp -e RUN_WORKER=true acetugboat/bragibooks:main prod
 
-	docker run --rm -d --name bragibooks -v /path/to/input:/input -v /path/to/output:/output -v /appdata/bragibooks/config:/config -p 8000:8000/tcp -e LOG_LEVEL=WARNING -e RUN_WORKER=true <your-username>/bragibooks:main prod
+Separate containers:
 
-Or run the web server and task worker in separate containers:
+	docker run --rm -d --name bragibooks -v /path/to/input:/downloads -v /path/to/output:/audiobooks -v /appdata/bragibooks/config:/config -p 8000:8000/tcp acetugboat/bragibooks:main prod
+	docker run --rm -d --name bragibooks-worker -v /path/to/input:/downloads -v /path/to/output:/audiobooks -v /appdata/bragibooks/config:/config acetugboat/bragibooks:main worker
 
-	docker run --rm -d --name bragibooks -v /path/to/input:/input -v /path/to/output:/output -v /appdata/bragibooks/config:/config -p 8000:8000/tcp -e LOG_LEVEL=WARNING <your-username>/bragibooks:main prod
-	docker run --rm -d --name bragibooks-worker -v /path/to/input:/input -v /path/to/output:/output -v /appdata/bragibooks/config:/config -e LOG_LEVEL=WARNING <your-username>/bragibooks:main worker
+#### Docker Compose
 
-## Docker Compose
-
-### Single container (web + worker)
+Single container (web + worker):
 ```yaml
 services:
   bragi:
@@ -118,23 +96,21 @@ services:
     container_name: bragibooks
     command: prod
     environment:
-      - CSRF_TRUSTED_ORIGINS=https://bragibooks.mydomain.com
+      - HOSTED_DOMAIN=bragibooks.mydomain.com
       - LOG_LEVEL=INFO
-      - DEBUG=False
       - UID=1000
       - GID=1000
       - RUN_WORKER=true
     volumes:
       - path/to/config:/config
-      - path/to/input:/input
-      - path/to/output:/output
-      - path/to/done:/done
+      - path/to/input:/downloads
+      - path/to/output:/audiobooks
     ports:
       - 8000:8000
     restart: unless-stopped
 ```
 
-### Separate containers (web + worker)
+Separate containers (web + worker):
 ```yaml
 services:
   bragi:
@@ -142,16 +118,14 @@ services:
     container_name: bragibooks
     command: prod
     environment:
-      - HOSTED_DOMAIN=bragibooks.mydomain.com  # Production: set your domain here
+      - HOSTED_DOMAIN=bragibooks.mydomain.com
       - LOG_LEVEL=INFO
-      - DEBUG=False
       - UID=1000
       - GID=1000
     volumes:
       - path/to/config:/config
-      - path/to/input:/input
-      - path/to/output:/output
-      - path/to/done:/done
+      - path/to/input:/downloads
+      - path/to/output:/audiobooks
     ports:
       - 8000:8000
     restart: unless-stopped
@@ -166,83 +140,58 @@ services:
       - GID=1000
     volumes:
       - path/to/config:/config
-      - path/to/input:/input
-      - path/to/output:/output
-      - path/to/done:/done
+      - path/to/input:/downloads
+      - path/to/output:/audiobooks
     restart: unless-stopped
 ```
 
+#### Direct install (Gunicorn)
+```bash
+uv sync
+python manage.py migrate
+python manage.py collectstatic --noinput
+python manage.py db_worker &
+gunicorn bragibooks_proj.wsgi \
+  --bind 0.0.0.0:8000 \
+  --timeout 1200 \
+  --worker-tmp-dir /dev/shm \
+  --workers=2 \
+  --threads=4 \
+  --worker-class=gthread \
+  --enable-stdio-inheritance
+```
 
-#### Direct Build (Gunicorn)
-  - Install dependencies:
-    ```
-    uv sync
-    ```
-  - Copy static assets to project folder:
-    ```
-    python manage.py collectstatic
-    ```
-  - Create the database:
-    ```
-    python manage.py migrate
-    ```
-  - Run the task queue worker:
-    ```
-    python manage.py db_worker
-    ```
-  - Run the web server:
-    ```
-    gunicorn bragibooks_proj.wsgi \
-    --bind 0.0.0.0:8000 \
-    --timeout 1200 \
-    --worker-tmp-dir /dev/shm \
-    --workers=2 \
-    --threads=4 \
-    --worker-class=gthread \
-    --reload \
-    --enable-stdio-inheritance
-    ```
+## Development <a name = "development"></a>
 
-## 🎈 Usage <a name="usage"></a>
+Bragibooks has two parts: a Django backend (port 8000) and a React frontend (Vite dev server on port 5173). In production they run together in a single container — Django serves the pre-built frontend assets. In development you run them separately for hot-reload on both sides.
 
-The Bragibooks process is a linear, 3 step process:
-1. __Select input__ - Use the file multi-select box to choose which books to process this session, and click next.
-2. __Submit ASINs__ - Bragi will auto search for the audiobook data on [Audible.com](https://www.audible.com) (US only). If the data found is incorrect you can do a custom search to find the correct title and then submit for processing.
-3. Wait for books to finish processing. This can take anywhere from 10 seconds to a few hours, depending on the number and type of files submitted. This will be done in the background.
-4. __Books page__ - Page where you can see the data assigned to each book after it has finished processing. You can also check the status of the books still being processed.
+### Backend
+```bash
+uv sync
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
 
-## ⛏️ Built Using <a name = "built_using"></a>
+# Separate terminal — task queue worker
+python manage.py db_worker
+```
 
-- [Django](https://www.djangoproject.com/) - Server/web framework
-- [django-tasks-db](https://github.com/RealOrangeOne/django-tasks-db) - Database-backed task queue worker
-- [Bulma](https://bulma.io/) - Frontend CSS framework
-- [audnexus](https://github.com/laxamentumtech/audnexus) - API backend for metadata
-- [m4b-merge](https://github.com/djdembeck/m4b-merge) - File merging and tagging
+Or via Docker:
+```bash
+docker compose -f docker/docker-compose.yaml --profile development up --build
+```
 
-## ✍️ Authors <a name = "authors"></a>
-  <img src="https://github.com/djdembeck.png?size=100"/>
-  
-  [@djdembeck](https://github.com/djdembeck) - Idea & Initial work
+### Frontend
+Requires Node.js 22.12+ or 20.19+.
+```bash
+cd frontend
+npm install
+npm run dev   # Vite dev server at http://localhost:5173
+```
 
-## Contributors ✨
+Vite proxies all `/api/*` requests to `http://localhost:8000` — the Django backend must be running. Open **http://localhost:5173** during development, not port 8000.
 
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://koby.huckabee.dev"><img src="https://avatars.githubusercontent.com/u/14910857?v=4?s=100" width="100px;" alt="Koby Huckabee"/><br /><sub><b>Koby Huckabee</b></sub></a><br /><a href="https://github.com/djdembeck/bragibooks/commits?author=AceTugboat" title="Code">💻</a> <a href="#ideas-AceTugboat" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/djdembeck/bragibooks/commits?author=AceTugboat" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://pilabor.com"><img src="https://avatars.githubusercontent.com/u/2050604?v=4?s=100" width="100px;" alt="Andreas"/><br /><sub><b>Andreas</b></sub></a><br /><a href="#tool-sandreas" title="Tools">🔧</a></td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+### Seed test data
+```bash
+python manage.py populate_test_books   # fake books in the database
+bash create-test-files.sh             # fake audio files in the input directory
+```
