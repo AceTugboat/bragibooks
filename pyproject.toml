@@ -3,6 +3,9 @@ name = "bragibooks"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "dj-database-url>=2.0",
+    "django-cors-headers>=4.0",
+    "django-vite>=3.0",
     "django>=6.0",
     "django-tasks-db>=0.1",
     "gunicorn>=20.1.0",
