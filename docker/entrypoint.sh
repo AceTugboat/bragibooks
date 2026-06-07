@@ -9,8 +9,11 @@ PGID=${GID:-100}
 PYTHON=/app/.venv/bin/python
 
 # create a user and group with specified UID and GID
-addgroup -g $PGID appgroup
-adduser -D -u $PUID -G appgroup appuser
+GROUPNAME=$(getent group $PGID | cut -d: -f1)
+if [ -z "$GROUPNAME" ]; then
+  addgroup -g $PGID appgroup
+  GROUPNAME=appgroup
+fi
 
 mkdir -p $APP_HOME
 find $APP_HOME -not -path '*/.git/*' -not -path '*/.git' \
@@ -19,6 +22,7 @@ find $APP_HOME -not -path '*/.git/*' -not -path '*/.git' \
 echo "Starting with UID: $PUID, GID: $PGID"
 
 # Fix permissions
+mkdir -p /config /input /output
 chown -R "$PUID":"$PGID" /config /input /output
 
 until cd /home/app/web

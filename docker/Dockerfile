@@ -44,6 +44,7 @@ COPY manage.py $APP_HOME
 
 # Copy entrypoint file
 COPY docker/entrypoint.sh /usr/local/bin/
+COPY --from=frontend-builder /static/dist /home/app/web/static/dist
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Port where the Django app runs

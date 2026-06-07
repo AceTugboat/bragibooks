@@ -142,7 +142,7 @@ services:
     container_name: bragibooks
     command: prod
     environment:
-      - CSRF_TRUSTED_ORIGINS=https://bragibooks.mydomain.com
+      - HOSTED_DOMAIN=bragibooks.mydomain.com  # Production: set your domain here
       - LOG_LEVEL=INFO
       - DEBUG=False
       - UID=1000

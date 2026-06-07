@@ -1,7 +1,5 @@
 # System imports
 import logging
-import os
-from datetime import timedelta
 from pathlib import Path
 
 import requests
@@ -31,8 +29,9 @@ from .tasks import m4b_merge_task
 logger = logging.getLogger(__name__)
 
 # If using docker, default to /input folder, else $USER/input
-if Path('/input').is_dir():
-    rootdir = "/input"
+# This is still used by DirectoryListAPI in api.py
+if Path('/downloads').is_dir():
+    rootdir = "/downloads"
 else:
     rootdir = f"{str(Path.home())}/input"
 

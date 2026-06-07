@@ -3,6 +3,7 @@ Django settings for bragibooks_proj project.
 """
 
 import os
+import dj_database_url
 
 from django.conf.global_settings import LOGIN_URL
 
@@ -18,9 +19,6 @@ else:
     CONFIG_DIR = os.path.join(BASE_DIR, 'config')
 
 SECRET_PATH = os.path.join(CONFIG_DIR, 'secret_key.txt')
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 with open(SECRET_PATH) as f:
@@ -42,11 +40,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_vite',
 ]
 
 MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -57,7 +57,29 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'bragibooks_proj.urls'
 
-CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", '').split(',') if os.getenv("CSRF_TRUSTED_ORIGINS") else ''
+# Production deployment - set HOSTED_DOMAIN to your domain (e.g., bragibooks.example.com)
+# This will automatically configure CORS and CSRF settings
+HOSTED_DOMAIN = os.getenv("HOSTED_DOMAIN", "")
+
+if HOSTED_DOMAIN:
+    trusted_origins = [
+        f'https://{HOSTED_DOMAIN}',
+        f'https://www.{HOSTED_DOMAIN}',
+    ]
+    # Production: use the hosted domain
+    CORS_ALLOWED_ORIGINS = trusted_origins
+    CSRF_TRUSTED_ORIGINS = trusted_origins if not os.getenv("CSRF_TRUSTED_ORIGINS") else os.getenv("CSRF_TRUSTED_ORIGINS").split(",")
+else:
+    trusted_origins = [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ]
+
+    # Development: use localhost
+    CORS_ALLOWED_ORIGINS = trusted_origins
+    CSRF_TRUSTED_ORIGINS = trusted_origins
+
+CORS_ALLOW_CREDENTIALS = True
 
 TEMPLATES = [
     {
@@ -79,11 +101,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'bragibooks_proj.wsgi.application'
 
 # Database
+if os.environ.get("DB_HOST"):
+    DATABASE_URL = f"postgres://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@{os.environ.get('DB_HOST')}:{os.environ.get('DB_PORT')}/{os.environ.get('DB_NAME')}"
+else:
+    DATABASE_URL = os.environ.get("DATABASE_URL")
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(CONFIG_DIR, 'db.sqlite3'),
-    }
+    'default': dj_database_url.config(
+        default=DATABASE_URL or f"sqlite:///{os.path.join(CONFIG_DIR, 'db.sqlite3')}",
+        conn_max_age=600
+    )
 }
 
 DEFAULT_AUTO_FIELD='django.db.models.AutoField'
@@ -128,6 +155,13 @@ USE_TZ = True
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATIC_URL = '/static/'
+
+# Django Vite
+DJANGO_VITE_ASSETS_PATH = os.path.join(BASE_DIR, 'static', 'dist')
+DJANGO_VITE_DEV_MODE = DEBUG
+DJANGO_VITE_DEV_SERVER_PORT = 5173
+DJANGO_VITE_DEV_SERVER_HOST = 'localhost'
+DJANGO_VITE_MANIFEST_PATH = os.path.join(DJANGO_VITE_ASSETS_PATH, 'manifest.json')
 
 # Set environment variable DJANGO_LOG_LEVEL to desired level
 # https://docs.djangoproject.com/en/2.2/topics/logging/
