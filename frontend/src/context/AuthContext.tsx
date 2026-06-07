@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, type ReactNode } from 'react';
-import { authApi, getErrorMessage } from '../api/services';
+import { authApi } from '../api/services';
 
 interface User {
     id: number;

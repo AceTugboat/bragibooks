@@ -5,6 +5,13 @@ import { resolve } from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ['import', 'global-builtin', 'color-functions', 'if-function'],
+      },
+    },
+  },
   base: '/',
   build: {
     manifest: 'manifest.json',
@@ -18,9 +25,9 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     proxy: {
-      '/api': 'http://web:8000',
-      '/asin-search': 'http://web:8000',
-      '/static/images': 'http://web:8000',
+      '/api': 'http://localhost:8000',
+      '/asin-search': 'http://localhost:8000',
+      '/static/images': 'http://localhost:8000',
     },
   },
 })

@@ -281,8 +281,7 @@ const QueuePage: React.FC = () => {
         try {
             setLoadingDirectory(true);
             const data = await directoryApi.getContents();
-            // Build tree structure from flat list
-            const treeStructure = buildFileTree(data.contents);
+            const treeStructure = buildFileTree(data.contents ?? []);
             setDirectoryContents(treeStructure);
         } catch (err) {
             setError(getErrorMessage(err));

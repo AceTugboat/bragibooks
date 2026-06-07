@@ -33,12 +33,12 @@ export const getErrorMessage = (error: any): string => {
 // Directory/File operations
 export const directoryApi = {
     getContents: async (): Promise<DirectoryContents> => {
-        const response = await apiClient.get<DirectoryContents>('/api/directories/');
+        const response = await apiClient.get<DirectoryContents>('/api/import/files/');
         return response.data;
     },
 
     startImport: async (selectedPaths: string[]): Promise<void> => {
-        await apiClient.post('/api/import/start', { input_dir: selectedPaths });
+        await apiClient.post('/api/import/start/', { input_dir: selectedPaths });
     },
 };
 
@@ -72,7 +72,7 @@ export const asinSearchApi = {
         author?: string;
         keywords?: string;
     }): Promise<AsinSearchResult[]> => {
-        const response = await apiClient.get<AsinSearchResult[]>('/asin-search/', {
+        const response = await apiClient.get<AsinSearchResult[]>('/api/asin-search/', {
             params,
         });
         return response.data;
@@ -121,7 +121,7 @@ export const authApi = {
     },
 
     initialSetup: async (username: string, password: string, email?: string): Promise<User> => {
-        const response = await apiClient.post<User>('/api/auth/initial-setup', {
+        const response = await apiClient.post<User>('/api/auth/setup', {
             username,
             password,
             email,
