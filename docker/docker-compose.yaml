@@ -1,11 +1,13 @@
 services:
-  bragi:
+  bragi-dev:
     image: bragibooks
     build:
       context: ../
       dockerfile: docker/Dockerfile
     container_name: bragibooks
     command: dev
+    profiles:
+      - development
     environment:
       - LOG_LEVEL=DEBUG
       - DEBUG=True
@@ -22,20 +24,68 @@ services:
       - 8000:8000
     restart: unless-stopped
 
-#  worker:
-#    image: bragibooks
-#    build:
-#      context: ../
-#      dockerfile: docker/Dockerfile
-#    container_name: bragibooks-worker
-#    command: worker
-#    environment:
-#      - LOG_LEVEL=DEBUG
-#      - UID=1001
-#      - GID=1001
-#    volumes:
-#      - $HOME/Projects/demo/config:/config
-#      - $HOME/Projects/demo/completed/audiobooks:/input
-#      - $HOME/Projects/demo/output/audiobooks:/output
-#      - $HOME/Projects/demo/converted:/done
-#    restart: unless-stopped
+  bragi:
+    image: acetugboat/bragibooks
+    container_name: bragibooks
+    command: prod
+    profiles:
+      - production
+    environment:
+      - LOG_LEVEL=INFO
+      - DEBUG=False
+      - UID=1001
+      - GID=1001
+      - RUN_WORKER=false
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=bragibooks
+      - DB_PASSWORD=bragibooks
+      - DB_NAME=bragibooks
+    volumes:
+      - /downloads:/downloads # Map to where files are downloaded for processing
+      - /audiobooks:/audiobooks # Map to where processed audiobooks are stored
+      - /config:/config
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  worker:
+    image: acetugboat/bragibooks
+    container_name: bragibooks-worker
+    command: worker
+    profiles:
+      - production
+    environment:
+      - LOG_LEVEL=INFO
+      - DEBUG=False
+      - UID=1001
+      - GID=1001
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=bragibooks
+      - DB_PASSWORD=bragibooks
+      - DB_NAME=bragibooks
+    volumes:
+      - /downloads:/downloads
+      - /audiobooks:/audiobooks
+      - /config:/config
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:18-alpine
+    container_name: bragibooks_db
+    profiles:
+      - production
+    environment:
+      - POSTGRES_DB=bragibooks
+      - POSTGRES_USER=bragibooks
+      - POSTGRES_PASSWORD=bragibooks
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

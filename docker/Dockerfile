@@ -1,5 +1,16 @@
+# Stage 1: Build the React/TypeScript frontend
+# Vite outputs to ../static/dist relative to the frontend dir,
+# so with WORKDIR / the built assets land at /static/dist
+FROM --platform=linux/amd64 node:20-alpine AS frontend-builder
+
+WORKDIR /
+COPY frontend/ ./frontend/
+RUN cd frontend && npm ci && npm run build
+
+
 # Pull amd64 uv binary explicitly so it downloads amd64 Python below
 FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:latest AS uv
+
 
 # Base image — provides m4b-merge system tools (PHP, ffmpeg)
 FROM --platform=linux/amd64 ghcr.io/djdembeck/m4b-merge:develop
@@ -42,9 +53,11 @@ COPY importer $APP_HOME/importer/
 COPY utils $APP_HOME/utils/
 COPY manage.py $APP_HOME
 
+# Copy built frontend assets from the node stage
+COPY --from=frontend-builder /static/dist $APP_HOME/static/dist
+
 # Copy entrypoint file
 COPY docker/entrypoint.sh /usr/local/bin/
-COPY --from=frontend-builder /static/dist /home/app/web/static/dist
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Port where the Django app runs
