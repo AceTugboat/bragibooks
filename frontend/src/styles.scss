@@ -1,0 +1,975 @@
+// Import modern SASS color module
+@use "sass:color";
+
+// Bragi Color System - Simplified Grey/White Theme
+// Clean, modern interface with grey sidebar and white/dark backgrounds.
+// Accent colors (green, red, gold) used for highlights, active states, and important UI elements.
+
+// 1. Define color variables
+// Accent colors (preserved from original theme)
+$bragi-green: #184A3A;
+$bragi-red: #8E2F3A;
+$honey-gold: #D8A13F;
+
+// Light mode colors
+$light-bg: #FFFFFF;
+$light-text: #212529;
+$light-sidebar: #2C3E50;
+$light-border: #DEE2E6;
+$light-card-bg: #FFFFFF;
+
+// Dark mode colors
+$dark-bg: #121212;
+$dark-text: #E0E0E0;
+$dark-sidebar: #1A1F2E;
+$dark-border: #3A3A3A;
+$dark-card-bg: #1E1E1E;
+$dark-surface: #2A2A2A;
+
+// 2. Override Bootstrap variables
+$primary: $bragi-red;
+$secondary: $light-sidebar;
+$success: $bragi-green;
+$warning: $honey-gold;
+$info: $bragi-green;
+$light: $light-bg;
+$dark: $dark-bg;
+
+$body-bg: $light-bg;
+$body-color: $light-text;
+
+$card-border-color: $light-border;
+$card-cap-bg: rgba($honey-gold, 0.05);
+
+$btn-primary-bg: $bragi-red;
+$btn-primary-border: $bragi-red;
+$btn-primary-hover-bg: color.adjust($bragi-red, $lightness: -10%);
+$btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
+
+// 3. Import Bootstrap
+@import "bootstrap/scss/bootstrap";
+
+// 4. Custom Utilities & Overrides
+
+// Sidebar styles (replaces old navbar)
+.sidebar {
+    background-color: $light-sidebar;
+    color: #FFFFFF;
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    transition: transform 0.3s ease-in-out;
+
+    @media (max-width: 768px) {
+        transform: translateX(-100%);
+
+        &.open {
+            transform: translateX(0);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+        }
+    }
+
+    .sidebar-brand {
+        padding: 1.5rem 1rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #FFFFFF;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-search {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+        input {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #FFFFFF;
+
+            &::placeholder {
+                color: rgba(255, 255, 255, 0.6);
+            }
+
+            &:focus {
+                background-color: rgba(255, 255, 255, 0.15);
+                border-color: $honey-gold;
+                color: #FFFFFF;
+            }
+        }
+    }
+
+    .sidebar-nav {
+        flex: 1;
+        padding: 0 1rem; // Add horizontal padding for rounded items
+
+        .nav-item {
+            margin-bottom: 0.25rem;
+
+            .nav-link {
+                color: rgba(255, 255, 255, 0.8);
+                padding: 0.75rem 1rem;
+                display: flex;
+                align-items: center;
+                transition: all 0.2s ease;
+                border-radius: 8px; // Rounded corners
+                border-left: none; // Remove old border
+
+                i:not(.fa-chevron-right) {
+                    margin-right: 0.75rem;
+                    width: 20px;
+                    text-align: center;
+                }
+
+                // Chevron rotation
+                .transition-transform {
+                    transition: transform 0.2s ease;
+                }
+
+                .rotate-90 {
+                    transform: rotate(90deg);
+                }
+
+                &:hover {
+                    color: #FFFFFF;
+                    background-color: rgba(255, 255, 255, 0.1);
+                    padding-left: 1rem; // Keep padding consistent
+                }
+
+                &.active {
+                    color: #FFFFFF;
+                    background-color: rgba(255, 255, 255, 0.15); // Lighter background for active
+                    padding-left: 1rem; // Keep padding consistent
+                }
+            }
+
+            // Tree View for Nested Items
+            ul {
+                position: relative;
+                margin-left: 1.5rem; // Indent
+                padding-left: 0.5rem;
+
+                // Vertical Line
+                &::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 1px;
+                    background-color: rgba(255, 255, 255, 0.2);
+                }
+
+                .nav-item {
+                    .nav-link {
+                        padding: 0.5rem 1rem;
+                        font-size: 0.95rem;
+
+                        &.active {
+                            background-color: rgba(255, 255, 255, 0.15);
+                            color: $honey-gold; // Highlight text color for nested active
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    .sidebar-footer {
+        padding: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            padding: 0.5rem;
+            width: 100%;
+            text-align: left;
+            transition: all 0.2s ease;
+
+            &:hover {
+                color: #FFFFFF;
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            i {
+                margin-right: 0.75rem;
+            }
+        }
+    }
+}
+
+// Mobile Top Navigation
+.mobile-top-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: $light-sidebar;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+
+    .mobile-brand {
+        font-size: 1.2rem;
+        white-space: nowrap;
+    }
+
+    .mobile-search {
+        input {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #FFFFFF;
+
+            &::placeholder {
+                color: rgba(255, 255, 255, 0.6);
+            }
+
+            &:focus {
+                background-color: rgba(255, 255, 255, 0.15);
+                border-color: $honey-gold;
+                color: #FFFFFF;
+            }
+        }
+    }
+}
+
+// Mobile Overlay
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+}
+
+// Main content area (offset for sidebar)
+.main-content {
+    margin-left: 250px;
+    min-height: 100vh;
+    padding: 2rem;
+
+    @media (max-width: 768px) {
+        margin-left: 0;
+        padding-top: 80px; // Space for top nav (60px) + padding
+    }
+}
+
+// Card overrides
+.card {
+    border: 1px solid $light-border;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background-color: $light-card-bg;
+}
+
+.card-header {
+    background-color: rgba($honey-gold, 0.05);
+    border-bottom: 1px solid $light-border;
+    font-weight: 600;
+    color: $light-text;
+}
+
+// Custom accent text colors
+.text-gold {
+    color: $honey-gold !important;
+}
+
+.text-bragi-green {
+    color: $bragi-green !important;
+}
+
+.text-bragi-red {
+    color: $bragi-red !important;
+}
+
+// Page Header (Dynamic per page)
+.page-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: $light-bg;
+    border-bottom: 1px solid $light-border;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+
+    .page-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .page-header-title {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .page-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+}
+
+// Library Page Styles
+.library-page {
+    padding: 0;
+}
+
+.library-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    justify-content: flex-end;
+
+    @media (max-width: 768px) {
+        // Keep row layout on mobile, but ensure items fit
+        gap: 0.5rem;
+    }
+
+    .library-search {
+        position: relative;
+        width: 300px;
+        flex-shrink: 0;
+        transition: width 0.3s ease;
+
+        &.focused {
+            width: 500px;
+        }
+
+        @media (max-width: 768px) {
+            // Take up remaining space next to sort icon
+            flex: 1;
+            width: auto;
+
+            &.focused {
+                width: auto;
+            }
+        }
+
+        input {
+            padding-right: 2.5rem;
+            width: 100%;
+        }
+
+        .btn-link {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 0.25rem;
+            color: $light-text;
+        }
+    }
+
+    .form-select {
+        min-width: 150px;
+        max-width: 200px;
+
+        @media (max-width: 768px) {
+            max-width: 100%;
+            width: 100%;
+        }
+    }
+
+    .library-count {
+        font-weight: 600;
+        white-space: nowrap;
+        color: $honey-gold;
+    }
+}
+
+// Unified Sort Wrapper (Icon with invisible select)
+.sort-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+
+    &:hover {
+        background-color: rgba($honey-gold, 0.1);
+    }
+
+    i {
+        font-size: 1.2rem;
+        pointer-events: none;
+    }
+
+    .sort-select {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 10;
+    }
+}
+
+// Library Grid (5 columns responsive)
+// TODO: Add list view option
+.library-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2rem;
+    padding: 0;
+
+    @media (max-width: 1400px) {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    @media (max-width: 1200px) {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: 768px) {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+    }
+
+    @media (max-width: 480px) {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+}
+
+// Library Book Card
+.library-book-card {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+
+    &:hover {
+        transform: translateY(-4px);
+
+        .library-book-title {
+            color: $bragi-red;
+        }
+    }
+
+    &:focus {
+        outline: 2px solid $bragi-red;
+        outline-offset: 2px;
+    }
+
+    .library-book-cover {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1/1;
+        overflow: hidden;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        background-color: #f0f0f0;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .library-book-title {
+        margin-top: 0.75rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        line-height: 1.3;
+        color: $light-text;
+        transition: color 0.2s ease;
+
+        // Ellipsis for long titles
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .pagination-button {
+        min-width: 40px;
+        height: 40px;
+        padding: 0.5rem;
+        border: 1px solid $light-border;
+        background-color: $light-bg;
+        color: $light-text;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+
+        &:hover:not(:disabled) {
+            background-color: rgba($honey-gold, 0.1);
+            border-color: $honey-gold;
+            color: $honey-gold;
+        }
+
+        &.active {
+            background-color: $bragi-red;
+            border-color: $bragi-red;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    .pagination-ellipsis {
+        padding: 0 0.5rem;
+        color: $light-text;
+    }
+}
+
+// Empty State
+.library-empty {
+    padding: 4rem 2rem;
+}
+
+// Book Detail Page Styles
+.book-detail-page {
+    padding: 0;
+
+    .book-detail-content {
+        padding: 0 1rem;
+    }
+
+    .book-detail-cover {
+        img {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            max-width: 400px;
+            display: block;
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+    }
+
+    h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: $light-text;
+        margin-bottom: 1rem;
+    }
+
+    .text-muted {
+        font-size: 1rem;
+        line-height: 1.6;
+
+        strong {
+            color: $light-text;
+            font-weight: 600;
+        }
+
+        i {
+            color: $honey-gold;
+        }
+    }
+
+    .card {
+
+        // Detail cards (audio/publishing/file info) have uniform height
+        // Description card height is auto to accommodate varying content
+        &:not(:has(.card-text)) {
+            height: 100%;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: $light-text;
+
+            i {
+                color: $honey-gold;
+            }
+        }
+
+        .card-text {
+            line-height: 1.6;
+            color: $light-text;
+        }
+
+        ul {
+            li {
+                line-height: 1.8;
+                color: $light-text;
+
+                strong {
+                    font-weight: 600;
+                    margin-right: 0.5rem;
+                }
+
+                code {
+                    background-color: rgba($honey-gold, 0.1);
+                    padding: 0.2rem 0.4rem;
+                    border-radius: 4px;
+                    font-size: 0.85rem;
+                    word-break: break-all;
+                }
+
+                .badge {
+                    padding: 0.35rem 0.65rem;
+                    font-weight: 500;
+                }
+            }
+        }
+    }
+}
+
+
+// Dark mode theme styles
+[data-theme="dark"] {
+    // Base colors
+    background-color: $dark-bg;
+    color: $dark-text;
+
+    // Body
+    body {
+        background-color: $dark-bg;
+        color: $dark-text;
+    }
+
+    // Main content area
+    .main-content {
+        background-color: $dark-bg;
+    }
+
+    // Sidebar
+    .sidebar {
+        background-color: $dark-sidebar;
+
+        .sidebar-brand {
+            border-bottom-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-search {
+            border-bottom-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-footer {
+            border-top-color: rgba(255, 255, 255, 0.05);
+        }
+    }
+
+    // Mobile Top Nav
+    .mobile-top-nav {
+        background-color: $dark-sidebar;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    // Cards
+    .card {
+        background-color: $dark-card-bg;
+        border-color: $dark-border;
+        color: $dark-text;
+    }
+
+    .card-header {
+        background-color: rgba($honey-gold, 0.1);
+        border-bottom-color: $dark-border;
+        color: $dark-text;
+    }
+
+    .card-body {
+        background-color: $dark-card-bg;
+        color: $dark-text;
+    }
+
+    // Text colors
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    span,
+    div {
+        color: $dark-text;
+    }
+
+    .text-muted {
+        color: rgba(255, 255, 255, 0.6) !important;
+    }
+
+    // Form controls
+    .form-control,
+    .form-select {
+        background-color: $dark-surface;
+        border-color: $dark-border;
+        color: $dark-text;
+
+        &:focus {
+            background-color: $dark-surface;
+            border-color: $honey-gold;
+            color: $dark-text;
+        }
+
+        &::placeholder {
+            color: rgba($dark-text, 0.5);
+        }
+    }
+
+    // Buttons
+    .btn-secondary {
+        background-color: $dark-surface;
+        border-color: $dark-border;
+        color: $dark-text;
+
+        &:hover {
+            background-color: color.adjust($dark-surface, $lightness: 10%);
+            border-color: color.adjust($dark-border, $lightness: 10%);
+        }
+    }
+
+    // Tables
+    .table {
+        --bs-table-color: #{$dark-text};
+        --bs-table-bg: transparent;
+        --bs-table-border-color: #{$dark-border};
+        --bs-table-striped-bg: #{$dark-surface};
+        --bs-table-striped-color: #{$dark-text};
+        --bs-table-active-bg: #{$dark-border};
+        --bs-table-active-color: #{$dark-text};
+        --bs-table-hover-bg: #{$dark-surface};
+        --bs-table-hover-color: #{$dark-text};
+
+        color: $dark-text;
+        border-color: $dark-border;
+
+        thead {
+            background-color: $dark-surface;
+            border-color: $dark-border;
+
+            th {
+                background-color: $dark-surface;
+                color: #FFFFFF;
+                border-bottom-color: $dark-border;
+            }
+        }
+
+        tbody {
+            background-color: $dark-card-bg;
+
+            tr {
+                background-color: transparent;
+                color: $dark-text;
+            }
+
+            td {
+                background-color: transparent;
+                color: $dark-text;
+                border-color: $dark-border;
+            }
+        }
+
+        // Fix for hover state
+        &.table-hover>tbody>tr:hover>* {
+            --bs-table-accent-bg: #{$dark-surface};
+            color: $dark-text;
+        }
+    }
+
+    // Modals
+    .modal-content {
+        background-color: $dark-card-bg;
+        border-color: $dark-border;
+    }
+
+    .modal-header {
+        border-bottom-color: $dark-border;
+    }
+
+    .modal-footer {
+        border-top-color: $dark-border;
+    }
+
+    // Input groups (for search bars)
+    .input-group {
+        .form-control {
+            background-color: $dark-surface;
+            border-color: $dark-border;
+            color: $dark-text;
+
+            &::placeholder {
+                color: rgba($dark-text, 0.5);
+            }
+
+            &:focus {
+                background-color: $dark-surface;
+                border-color: $honey-gold;
+                color: $dark-text;
+            }
+        }
+
+        .input-group-text {
+            background-color: $dark-surface;
+            border-color: $dark-border;
+            color: $dark-text;
+        }
+
+        .btn-outline-secondary {
+            background-color: $dark-surface;
+            border-color: $dark-border;
+            color: $dark-text;
+
+            &:hover {
+                background-color: color.adjust($dark-surface, $lightness: 10%);
+                border-color: $honey-gold;
+                color: $dark-text;
+            }
+        }
+    }
+
+    // List groups
+    .list-group-item {
+        background-color: $dark-card-bg;
+        border-color: $dark-border;
+        color: $dark-text;
+
+        &:hover {
+            background-color: color.adjust($dark-card-bg, $lightness: 5%);
+        }
+    }
+
+    // Alerts
+    .alert-danger {
+        background-color: rgba($bragi-red, 0.2);
+        border-color: $bragi-red;
+        color: lighten($bragi-red, 40%);
+    }
+
+    .alert-warning {
+        background-color: rgba($honey-gold, 0.2);
+        border-color: $honey-gold;
+        color: lighten($honey-gold, 20%);
+    }
+
+    // Page Header (dark mode)
+    .page-header {
+        background-color: $dark-bg;
+        border-bottom-color: $dark-border;
+
+        .library-search .btn-link {
+            color: $dark-text;
+        }
+
+        .library-count {
+            color: $honey-gold;
+        }
+    }
+
+    // Library Book Cards (dark mode)
+    .library-book-card {
+        .library-book-title {
+            color: $dark-text;
+        }
+
+        &:hover .library-book-title {
+            color: color.adjust($bragi-red, $lightness: 20%);
+        }
+    }
+
+    // Book Detail Page (dark mode)
+    .book-detail-page {
+        h2 {
+            color: $dark-text;
+        }
+
+        .text-muted {
+            color: $dark-text !important;
+
+            strong {
+                color: $dark-text;
+            }
+        }
+
+        .card {
+            .card-title {
+                color: $dark-text;
+            }
+
+            .card-text {
+                color: $dark-text;
+            }
+
+            ul li {
+                color: $dark-text;
+
+                code {
+                    background-color: rgba($honey-gold, 0.15);
+                    color: $dark-text;
+                }
+            }
+        }
+    }
+
+    // Pagination (dark mode)
+    .pagination {
+        .pagination-button {
+            background-color: $dark-surface;
+            border-color: $dark-border;
+            color: $dark-text;
+
+            &:hover:not(:disabled) {
+                background-color: rgba($honey-gold, 0.2);
+                border-color: $honey-gold;
+                color: $honey-gold;
+            }
+
+            &.active {
+                background-color: $bragi-red;
+                border-color: $bragi-red;
+                color: #FFFFFF;
+            }
+        }
+
+        .pagination-ellipsis {
+            color: $dark-text;
+        }
+    }
+}
+
+// Light mode explicit styles (default)
+[data-theme="light"] {
+    background-color: $light-bg;
+    color: $light-text;
+
+    body {
+        background-color: $light-bg;
+        color: $light-text;
+    }
+}

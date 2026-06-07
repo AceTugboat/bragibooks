@@ -1,0 +1,10 @@
+.python-version
+.vscode
+/static/
+__pycache__/
+config/
+env/
+venv/
+demo/
+.DS_Store
+admin/

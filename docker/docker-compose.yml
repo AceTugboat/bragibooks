@@ -1,0 +1,56 @@
+services:
+  frontend:
+    image: node:20-alpine
+    container_name: bragibooks_frontend
+    working_dir: /app
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+
+  web:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    container_name: bragibooks_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=bragibooks
+      - DB_PASSWORD=bragibooks
+      - DB_NAME=bragibooks
+      # - HOSTED_DOMAIN=bragi.example.com # Set this to your domain to enable production settings
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=true
+    volumes:
+      - ../:/home/app/web # for development
+      - ../test_dir/downloads:/downloads
+      - ../test_dir/audiobooks:/audiobooks
+      - ../config:/config
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:18-alpine
+    container_name: bragibooks_db
+    environment:
+      - POSTGRES_DB=bragibooks
+      - POSTGRES_USER=bragibooks
+      - POSTGRES_PASSWORD=bragibooks
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: bragibooks_redis
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:

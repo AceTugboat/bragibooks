@@ -1,0 +1,14 @@
+celery>=5.5.3
+Django>=5.2.8
+gunicorn>=23.0.0
+kombu==5.5.4 # this has the latest update needed to use sqlalchemy>=2.0
+Levenshtein==0.27.3
+requests>=2.32.5
+sqlalchemy>=2.0.44 # for celery to use sqlite as broker
+whitenoise==6.11.0
+m4b-merge==0.5.3
+dj-database-url
+psycopg2-binary
+redis
+django-vite
+django-cors-headers
