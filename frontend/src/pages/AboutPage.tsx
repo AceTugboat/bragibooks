@@ -87,7 +87,7 @@ const AboutPage: React.FC = () => {
                             <li className="mb-2">
                                 <i className="fab fa-github me-2"></i>
                                 <a
-                                    href="https://github.com/djdembeck/bragibooks"
+                                    href="https://github.com/AceTugboat/bragibooks"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-decoration-none"
@@ -109,7 +109,7 @@ const AboutPage: React.FC = () => {
                             <li className="mb-0">
                                 <i className="fas fa-bug me-2"></i>
                                 <a
-                                    href="https://github.com/djdembeck/bragibooks/issues"
+                                    href="https://github.com/AceTugboat/bragibooks/issues"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-decoration-none"
