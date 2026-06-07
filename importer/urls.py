@@ -18,7 +18,7 @@ api_patterns = [
 
     # Books
     path('api/books/', BooksListAPI.as_view(), name='api-books'),
-    path('api/books/<str:asin>/', BookDetailAPI.as_view(), name='api-book-detail'),
+    path('api/books/<int:pk>/', BookDetailAPI.as_view(), name='api-book-detail'),
 
     # Import / match
     path('api/match/', MatchAPI.as_view(), name='api-match'),
