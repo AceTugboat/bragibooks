@@ -1,5 +1,6 @@
 # System imports
 import logging
+import os
 from pathlib import Path
 
 import requests
@@ -40,12 +41,9 @@ class ImportView(LoginRequiredMixin, TemplateView):
     template_name = "importer.html"
 
     def get_context_data(self, **kwargs):
-        context = {
-            "contents": sorted(
-                Path(rootdir).iterdir(), key=os.path.getmtime, reverse=True
-            )
-        }
-        return context
+        root = Path(rootdir)
+        contents = sorted(root.iterdir(), key=os.path.getmtime, reverse=True) if root.is_dir() else []
+        return {"contents": contents}
 
     def post(self, request):
         # Redirect if this is a new session

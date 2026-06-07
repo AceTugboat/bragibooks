@@ -27,9 +27,10 @@ class DirectoryListAPI(View):
     def get(self, request):
         from .views import rootdir
         try:
-            # Recursively get all files and directories with metadata
             all_items = []
             root_path = Path(rootdir)
+            if not root_path.is_dir():
+                return JsonResponse({'contents': []})
             
             # Walk through all subdirectories
             for item in root_path.rglob('*'):
