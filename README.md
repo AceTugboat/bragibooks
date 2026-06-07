@@ -70,12 +70,20 @@ You can either install this project directly or run it prepackaged in Docker.
 
 #### Direct (Gunicorn)
 - You'll need to install m4b-tool and it's dependants from [the project's readme](https://github.com/sandreas/m4b-tool#installation)
-- Run `pip install -r requirements.txt` from this project's directory.
+- Run `uv sync` from this project's directory (install [uv](https://github.com/astral-sh/uv) if you don't have it).
 
 ### Installing
 
 #### Docker
 To run Bragibooks as a container, you need to pass some paramaters in the run command:
+
+The container entrypoint accepts a mode argument that controls what it runs:
+
+  | Mode | Description |
+  | :----: | --- |
+  | `prod` | Gunicorn production server (default) |
+  | `worker` | Task queue worker — can be run in a separate container |
+  | `dev` | Django development server |
 
   | Parameter | Function |
   | :----: | --- |
@@ -87,22 +95,52 @@ To run Bragibooks as a container, you need to pass some paramaters in the run co
   | `-e DEBUG=False` | Turn django debug on or off (default False) |
   | `-e UID=99` | User ID to run the container as (default 99)|
   | `-e GID=100` | Group ID to run the container as (default 100)|
-  | `-e CELERY_WORKERS=1` | The number or celery workers for processing books (default 1)|
+  | `-e RUN_WORKER=true` | Run the task queue worker inside this container (default false)|
   | `-e CSRF_TRUSTED_ORIGINS=https://bragibooks.mydomain.com` | Domains to trust if bragibooks is hosted behind a reverse proxy. |
 
 
-Which all together should look like: 
+Which all together should look like:
 
-	docker run --rm -d --name bragibooks -v /path/to/input:/input -v /path/to/output:/output -v /appdata/bragibooks/config:/config -p 8000:8000/tcp -e LOG_LEVEL=WARNING ghcr.io/djdembeck/bragibooks:main
+	docker run --rm -d --name bragibooks -v /path/to/input:/input -v /path/to/output:/output -v /appdata/bragibooks/config:/config -p 8000:8000/tcp -e LOG_LEVEL=WARNING -e RUN_WORKER=true <your-username>/bragibooks:main prod
+
+Or run the web server and task worker in separate containers:
+
+	docker run --rm -d --name bragibooks -v /path/to/input:/input -v /path/to/output:/output -v /appdata/bragibooks/config:/config -p 8000:8000/tcp -e LOG_LEVEL=WARNING <your-username>/bragibooks:main prod
+	docker run --rm -d --name bragibooks-worker -v /path/to/input:/input -v /path/to/output:/output -v /appdata/bragibooks/config:/config -e LOG_LEVEL=WARNING <your-username>/bragibooks:main worker
 
 ## Docker Compose
-```
-version: '3'
 
+### Single container (web + worker)
+```yaml
 services:
   bragi:
-    image: ghcr.io/djdembeck/bragibooks:main
+    image: acetugboat/bragibooks:main
     container_name: bragibooks
+    command: prod
+    environment:
+      - CSRF_TRUSTED_ORIGINS=https://bragibooks.mydomain.com
+      - LOG_LEVEL=INFO
+      - DEBUG=False
+      - UID=1000
+      - GID=1000
+      - RUN_WORKER=true
+    volumes:
+      - path/to/config:/config
+      - path/to/input:/input
+      - path/to/output:/output
+      - path/to/done:/done
+    ports:
+      - 8000:8000
+    restart: unless-stopped
+```
+
+### Separate containers (web + worker)
+```yaml
+services:
+  bragi:
+    image: acetugboat/bragibooks:main
+    container_name: bragibooks
+    command: prod
     environment:
       - CSRF_TRUSTED_ORIGINS=https://bragibooks.mydomain.com
       - LOG_LEVEL=INFO
@@ -112,16 +150,35 @@ services:
     volumes:
       - path/to/config:/config
       - path/to/input:/input
-      - path/to/output/output:/output
+      - path/to/output:/output
       - path/to/done:/done
     ports:
       - 8000:8000
+    restart: unless-stopped
+
+  worker:
+    image: acetugboat/bragibooks:main
+    container_name: bragibooks-worker
+    command: worker
+    environment:
+      - LOG_LEVEL=INFO
+      - UID=1000
+      - GID=1000
+    volumes:
+      - path/to/config:/config
+      - path/to/input:/input
+      - path/to/output:/output
+      - path/to/done:/done
     restart: unless-stopped
 ```
 
 
 #### Direct Build (Gunicorn)
-  - Copy static assets to  project folder:
+  - Install dependencies:
+    ```
+    uv sync
+    ```
+  - Copy static assets to project folder:
     ```
     python manage.py collectstatic
     ```
@@ -129,12 +186,9 @@ services:
     ```
     python manage.py migrate
     ```
-  - Run the celery worker for processing books:
+  - Run the task queue worker:
     ```
-    celery -A bragibooks_proj worker \
-    --loglevel=info \ 
-    --concurrency 1 \
-    -E
+    python manage.py db_worker
     ```
   - Run the web server:
     ```
@@ -160,7 +214,7 @@ The Bragibooks process is a linear, 3 step process:
 ## ⛏️ Built Using <a name = "built_using"></a>
 
 - [Django](https://www.djangoproject.com/) - Server/web framework
-- [Celery](https://docs.celeryq.dev/en/stable/getting-started/introduction.html) - Task queue and worker
+- [django-tasks-db](https://github.com/RealOrangeOne/django-tasks-db) - Database-backed task queue worker
 - [Bulma](https://bulma.io/) - Frontend CSS framework
 - [audnexus](https://github.com/laxamentumtech/audnexus) - API backend for metadata
 - [m4b-merge](https://github.com/djdembeck/m4b-merge) - File merging and tagging
