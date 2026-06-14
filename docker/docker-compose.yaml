@@ -26,6 +26,8 @@ services:
     restart: unless-stopped
 
   # Production web server (Gunicorn)
+  # DATABASE_URL defaults to SQLite — no config needed.
+  # To use PostgreSQL, uncomment DATABASE_URL and add a db service (see README).
   bragi:
     image: acetugboat/bragibooks
     container_name: bragibooks
@@ -38,9 +40,7 @@ services:
       - UID=1001
       - GID=1001
       - RUN_WORKER=false
-      # To use PostgreSQL instead of the default SQLite:
-      # - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
-      # Passkeys (optional):
+      # - DATABASE_URL=postgres://bragibooks:password@db:5432/bragibooks
       # - PASSKEY_RP_ID=bragibooks.mydomain.com
       # - PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
@@ -63,7 +63,7 @@ services:
       - DEBUG=False
       - UID=1001
       - GID=1001
-      # - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
+      # - DATABASE_URL=postgres://bragibooks:password@db:5432/bragibooks
     volumes:
       - /downloads:/downloads
       - /audiobooks:/audiobooks

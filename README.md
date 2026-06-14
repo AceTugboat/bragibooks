@@ -179,17 +179,13 @@ gunicorn bragibooks_proj.wsgi \
 
 **SQLite is the default — no database setup required.** The database file is created automatically at `/config/db.sqlite3` on first run. This is the same approach used by Sonarr, Radarr, and the rest of the *arr stack and works well for personal and household installs.
 
-To use PostgreSQL instead, set `DATABASE_URL` in your environment:
+To use PostgreSQL, uncomment the `DATABASE_URL` line in your `docker-compose.yaml` environment section and point it at your database:
 
-```bash
-DATABASE_URL=postgres://bragibooks:yourpassword@localhost:5432/bragibooks
+```yaml
+- DATABASE_URL=postgres://bragibooks:password@db:5432/bragibooks
 ```
 
-You also need the psycopg2 adapter:
-
-```bash
-uv sync --extra postgres
-```
+The PostgreSQL adapter is bundled in the image — no extra steps required. Add a `db` service to your compose file if you need a local Postgres instance (see the [Database](#database) section in the docs folder for a full example).
 
 PostgreSQL is recommended for multi-user installs or NAS deployments where you already have a shared Postgres instance running.
 
