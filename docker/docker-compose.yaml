@@ -15,8 +15,6 @@ services:
       - UID=1001
       - GID=1001
       - RUN_WORKER=true
-      # DATABASE_URL defaults to SQLite at /config/db.sqlite3 — no config needed for dev
-      # - DATABASE_URL=postgres://bragibooks:password@db:5432/bragibooks
     volumes:
       - $HOME/Projects/bragibooks:/home/app/web
       - $HOME/Projects/demo/config:/config
@@ -40,9 +38,9 @@ services:
       - UID=1001
       - GID=1001
       - RUN_WORKER=false
-      # Defaults to SQLite. For PostgreSQL: DATABASE_URL=postgres://user:pass@db:5432/bragibooks
-      - DATABASE_URL=${DATABASE_URL:-sqlite:////config/db.sqlite3}
-      # Passkeys (optional — required only if you want passwordless login)
+      # To use PostgreSQL instead of the default SQLite:
+      # - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
+      # Passkeys (optional):
       # - PASSKEY_RP_ID=bragibooks.mydomain.com
       # - PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
@@ -65,7 +63,7 @@ services:
       - DEBUG=False
       - UID=1001
       - GID=1001
-      - DATABASE_URL=${DATABASE_URL:-sqlite:////config/db.sqlite3}
+      # - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
     volumes:
       - /downloads:/downloads
       - /audiobooks:/audiobooks

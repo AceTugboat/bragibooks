@@ -177,35 +177,21 @@ gunicorn bragibooks_proj.wsgi \
 
 ## Database <a name = "database"></a>
 
-Bragibooks supports SQLite and PostgreSQL via the `DATABASE_URL` environment variable. SQLite is the default and requires no configuration — the same approach used by Sonarr, Radarr, and the rest of the *arr stack.
+**SQLite is the default — no database setup required.** The database file is created automatically at `/config/db.sqlite3` on first run. This is the same approach used by Sonarr, Radarr, and the rest of the *arr stack and works well for personal and household installs.
 
-| Database | `DATABASE_URL` format | Extra dependency |
-|---|---|---|
-| SQLite (default) | `sqlite:////config/db.sqlite3` | None |
-| PostgreSQL | `postgres://user:pass@host:5432/dbname` | `psycopg2-binary` |
+To use PostgreSQL instead, set `DATABASE_URL` in your environment:
 
-### SQLite
+```bash
+DATABASE_URL=postgres://bragibooks:yourpassword@localhost:5432/bragibooks
+```
 
-No configuration required. The database file is created at `/config/db.sqlite3` on first run. Recommended for single-user and household installs.
-
-### PostgreSQL
-
-Recommended for multi-user installs or NAS deployments where you already have a shared Postgres instance.
-
-Add the psycopg2 adapter to your installation:
+You also need the psycopg2 adapter:
 
 ```bash
 uv sync --extra postgres
 ```
 
-Set `DATABASE_URL` in your environment or `.env` file:
-```bash
-DATABASE_URL=postgres://bragibooks:yourpassword@localhost:5432/bragibooks
-```
-
-### Docker
-
-Set `DATABASE_URL` as an environment variable or in a `.env` file next to your compose file. The official image includes only the SQLite adapter. For PostgreSQL, build a custom image layer or use the compose `build` override to run `uv sync --extra postgres`.
+PostgreSQL is recommended for multi-user installs or NAS deployments where you already have a shared Postgres instance running.
 
 ## Passkeys <a name = "passkeys"></a>
 
