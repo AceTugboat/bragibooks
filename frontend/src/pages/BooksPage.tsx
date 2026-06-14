@@ -3,16 +3,13 @@ import { useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import LibraryBookCard from '../components/LibraryBookCard';
 import Pagination from '../components/Pagination';
-import type { Book } from '../types';
-import { bookApi, getErrorMessage } from '../api/services';
+import { useData } from '../context/DataContext';
 
 type SortOption = 'title' | 'release_date' | 'author';
 
 const BooksPage: React.FC = () => {
     const location = useLocation();
-    const [books, setBooks] = useState<Book[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { books, loadingBooks, errorBooks } = useData();
 
     // Filter/Sort/Pagination state - restore from location.state if available
     const [searchQuery, setSearchQuery] = useState(
@@ -29,30 +26,14 @@ const BooksPage: React.FC = () => {
     );
     const [searchFocused, setSearchFocused] = useState(false);
 
-    useEffect(() => {
-        loadBooks();
-    }, []);
-
     // Scroll to top when page changes
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [currentPage]);
 
-    const loadBooks = async () => {
-        try {
-            setLoading(true);
-            const data = await bookApi.getAll();
-            setBooks(data.done);
-        } catch (err) {
-            setError(getErrorMessage(err));
-        } finally {
-            setLoading(false);
-        }
-    };
-
     // Filter and sort books
     const filteredAndSortedBooks = useMemo(() => {
-        let result = [...books];
+        let result = [...(books.done ?? [])];
 
         // Filter by search query
         if (searchQuery) {
@@ -83,7 +64,7 @@ const BooksPage: React.FC = () => {
         });
 
         return result;
-    }, [books, searchQuery, sortBy]);
+    }, [books.done, searchQuery, sortBy]);
 
     // Paginate books
     const totalPages = Math.ceil(filteredAndSortedBooks.length / itemsPerPage);
@@ -97,20 +78,20 @@ const BooksPage: React.FC = () => {
         setCurrentPage(1);
     }, [searchQuery, sortBy, itemsPerPage]);
 
-    if (loading) {
+    if (loadingBooks) {
         return (
-            <div className="text-center my-5">
-                <div className="spinner-border" role="status">
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
+                <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div>
             </div>
         );
     }
 
-    if (error) {
+    if (errorBooks) {
         return (
             <div className="alert alert-danger m-4" role="alert">
-                {error}
+                {errorBooks}
             </div>
         );
     }
