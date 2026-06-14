@@ -26,6 +26,7 @@
 
 - [About & Usage](#about)
 - [Getting Started](#getting_started)
+- [Passkeys](#passkeys)
 - [Development](#development)
 
 ## About & Usage <a name = "about"></a>
@@ -38,7 +39,7 @@ The workflow is a simple 3-step process:
 
 1. **Select input** — browse your audio files and select what you want to process
 2. **Match ASIN** — Bragibooks auto-searches Audible for metadata. If the match is wrong, use the custom search to find the correct title
-3. **Process** — submit for processing and wait. This runs in the background and can take anywhere from seconds to hours depending on file size. Track progress on the Books page
+3. **Process** — submit for processing and wait. This runs in the background and can take anywhere from seconds to hours depending on file size. Track progress on the Processing page
 
 ## Getting Started <a name = "getting_started"></a>
 
@@ -75,7 +76,10 @@ The container entrypoint accepts a mode argument:
   | `-e UID=99` | User ID to run the container as (default 99) |
   | `-e GID=100` | Group ID to run the container as (default 100) |
   | `-e RUN_WORKER=true` | Run the task queue worker inside this container (default false) |
-  | `-e HOSTED_DOMAIN=bragibooks.mydomain.com` | Set for production deployments behind a reverse proxy |
+  | `-e HOSTED_DOMAIN=bragibooks.mydomain.com` | Set for production deployments behind a reverse proxy. Also controls CORS and CSRF allowed origins. |
+  | `-e PASSKEY_RP_ID=bragibooks.mydomain.com` | Relying Party ID for passkey auth (defaults to `HOSTED_DOMAIN`). Must be a registrable domain suffix of your origin. |
+  | `-e PASSKEY_RP_NAME=Bragibooks` | Human-readable name shown during passkey registration (default: `Bragibooks`) |
+  | `-e PASSKEY_ORIGIN=https://bragibooks.mydomain.com` | Exact origin the browser sends during WebAuthn. Must be `https://` in production. |
 
 Single container (web + worker):
 
@@ -101,6 +105,9 @@ services:
       - UID=1000
       - GID=1000
       - RUN_WORKER=true
+      # Passkeys (optional — omit if you only want username/password login)
+      # - PASSKEY_RP_ID=bragibooks.mydomain.com
+      # - PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
       - path/to/config:/config
       - path/to/input:/downloads
@@ -122,6 +129,9 @@ services:
       - LOG_LEVEL=INFO
       - UID=1000
       - GID=1000
+      # Passkeys (optional — omit if you only want username/password login)
+      # - PASSKEY_RP_ID=bragibooks.mydomain.com
+      # - PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
       - path/to/config:/config
       - path/to/input:/downloads
@@ -145,6 +155,53 @@ services:
     restart: unless-stopped
 ```
 
+With PostgreSQL (recommended for production):
+```yaml
+services:
+  bragi:
+    image: acetugboat/bragibooks:main
+    container_name: bragibooks
+    command: prod
+    environment:
+      - HOSTED_DOMAIN=bragibooks.mydomain.com
+      - LOG_LEVEL=INFO
+      - UID=1000
+      - GID=1000
+      - RUN_WORKER=true
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-bragibooks}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-bragibooks}
+    volumes:
+      - path/to/config:/config
+      - path/to/input:/downloads
+      - path/to/output:/audiobooks
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:18-alpine
+    container_name: bragibooks_db
+    environment:
+      - POSTGRES_DB=${DB_NAME:-bragibooks}
+      - POSTGRES_USER=${DB_USER:-bragibooks}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+Create a `.env` file next to your `docker-compose.yaml` with your database password (never commit this file):
+```bash
+DB_PASSWORD=your-strong-password-here
+```
+
 #### Direct install (Gunicorn)
 ```bash
 uv sync
@@ -161,26 +218,62 @@ gunicorn bragibooks_proj.wsgi \
   --enable-stdio-inheritance
 ```
 
+## Passkeys <a name = "passkeys"></a>
+
+Bragibooks supports passwordless login via passkeys — device biometrics (Touch ID, Face ID, Windows Hello) or hardware security keys (YubiKey, etc.). Passkeys are entirely optional: username/password login always works and requires no configuration changes.
+
+### Setup
+
+1. Log in with your username and password as usual
+2. Go to **Settings > Security**
+3. Click **Add a Passkey**, give it a name (e.g. "MacBook Touch ID"), and follow your device's prompt
+4. On future logins, click **Sign in with passkey** on the login page
+
+You can register multiple passkeys (one per device) and remove them at any time from the Security settings page.
+
+### Production requirements
+
+Passkeys use the WebAuthn standard, which browsers enforce over HTTPS only (or `http://localhost` for local development). Set these three environment variables on your production deployment:
+
+| Variable | Description | Example |
+|---|---|---|
+| `PASSKEY_RP_ID` | Your domain, no scheme prefix | `bragibooks.mydomain.com` |
+| `PASSKEY_RP_NAME` | Name shown during registration prompt | `Bragibooks` |
+| `PASSKEY_ORIGIN` | Full origin including scheme | `https://bragibooks.mydomain.com` |
+
+`PASSKEY_RP_ID` must be a registrable domain suffix of your origin — it cannot be an IP address. If you access Bragibooks at `https://bragibooks.mydomain.com`, the RP ID can be either `bragibooks.mydomain.com` or `mydomain.com`.
+
+If these variables are not set, the passkey button will not appear on the login page and passkey registration will be unavailable — all other functionality continues to work normally.
+
 ## Development <a name = "development"></a>
 
-Bragibooks has two parts: a Django backend (port 8000) and a React frontend (Vite dev server on port 5173). In production they run together in a single container — Django serves the pre-built frontend assets. In development you run them separately for hot-reload on both sides.
+Bragibooks has two parts: a Django backend (port 8000) and a React frontend. There are two development modes depending on whether you want to work inside Docker or run everything locally.
 
-### Backend
-```bash
-uv sync
-python manage.py migrate
-python manage.py runserver 0.0.0.0:8000
+### Docker dev mode
 
-# Separate terminal — task queue worker
-python manage.py db_worker
-```
+Runs `manage.py runserver` inside the container with the pre-built frontend assets from `static/dist/`. The task worker runs in the same container (`RUN_WORKER=true` is set by default in the dev profile).
 
-Or via Docker:
 ```bash
 docker compose -f docker/docker-compose.yaml --profile development up --build
 ```
 
-### Frontend
+This mode serves the *built* frontend. After any frontend changes, rebuild with `npm run build` and restart the container.
+
+Passkeys work in Docker dev mode — defaults are `PASSKEY_RP_ID=localhost` and `PASSKEY_ORIGIN=http://localhost:8000` when `HOSTED_DOMAIN` is not set.
+
+### Local dev mode
+
+Runs Django and the Vite dev server separately, giving you hot reload on both backend and frontend.
+
+**Terminal 1 — Django backend:**
+```bash
+uv sync
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
+```
+
+**Terminal 2 — Frontend (Vite dev server):**
+
 Requires Node.js 22.12+ or 20.19+.
 ```bash
 cd frontend
@@ -188,7 +281,14 @@ npm install
 npm run dev   # Vite dev server at http://localhost:5173
 ```
 
-Vite proxies all `/api/*` requests to `http://localhost:8000` — the Django backend must be running. Open **http://localhost:5173** during development, not port 8000.
+Vite proxies all `/api/*` requests to `http://localhost:8000`. Open **http://localhost:5173** in your browser, not port 8000.
+
+For passkeys in local dev mode, set `PASSKEY_ORIGIN=http://localhost:5173` and `PASSKEY_RP_ID=localhost`.
+
+**Terminal 3 — Task queue worker:**
+```bash
+python manage.py db_worker
+```
 
 ### Seed test data
 ```bash
