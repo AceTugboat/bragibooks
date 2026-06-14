@@ -105,7 +105,6 @@ services:
       - RUN_WORKER=true
       # DATABASE_URL defaults to SQLite at /config/db.sqlite3 — no extra config needed
       # To use PostgreSQL: - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
-      # To use MySQL:      - DATABASE_URL=mysql://user:pass@db:3306/bragibooks
       # Passkeys (optional): - PASSKEY_RP_ID=bragibooks.mydomain.com
       #                        PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
@@ -178,19 +177,20 @@ gunicorn bragibooks_proj.wsgi \
 
 ## Database <a name = "database"></a>
 
-Bragibooks supports any Django-compatible database via the `DATABASE_URL` environment variable. The default is SQLite, which requires no configuration and works well for personal or small installs.
+Bragibooks supports SQLite and PostgreSQL via the `DATABASE_URL` environment variable. SQLite is the default and requires no configuration — the same approach used by Sonarr, Radarr, and the rest of the *arr stack.
 
 | Database | `DATABASE_URL` format | Extra dependency |
 |---|---|---|
 | SQLite (default) | `sqlite:////config/db.sqlite3` | None |
 | PostgreSQL | `postgres://user:pass@host:5432/dbname` | `psycopg2-binary` |
-| MySQL / MariaDB | `mysql://user:pass@host:3306/dbname` | `mysqlclient` |
 
 ### SQLite
 
-No configuration required. The database file is created at `/config/db.sqlite3` on first run.
+No configuration required. The database file is created at `/config/db.sqlite3` on first run. Recommended for single-user and household installs.
 
 ### PostgreSQL
+
+Recommended for multi-user installs or NAS deployments where you already have a shared Postgres instance.
 
 Add the psycopg2 adapter to your installation:
 
@@ -198,27 +198,14 @@ Add the psycopg2 adapter to your installation:
 uv sync --extra postgres
 ```
 
-Then set `DATABASE_URL` in your environment or `.env` file:
+Set `DATABASE_URL` in your environment or `.env` file:
 ```bash
 DATABASE_URL=postgres://bragibooks:yourpassword@localhost:5432/bragibooks
 ```
 
-### MySQL / MariaDB
-
-Install the mysqlclient adapter:
-
-```bash
-uv sync --extra mysql
-```
-
-Then set `DATABASE_URL`:
-```bash
-DATABASE_URL=mysql://bragibooks:yourpassword@localhost:3306/bragibooks
-```
-
 ### Docker
 
-When running in Docker, set `DATABASE_URL` as an environment variable or in a `.env` file next to your compose file. The database adapter must be present in the image — the official image includes only the SQLite adapter. For PostgreSQL or MySQL, build a custom image layer or use the compose `extends` pattern to add the adapter.
+Set `DATABASE_URL` as an environment variable or in a `.env` file next to your compose file. The official image includes only the SQLite adapter. For PostgreSQL, build a custom image layer or use the compose `build` override to run `uv sync --extra postgres`.
 
 ## Passkeys <a name = "passkeys"></a>
 

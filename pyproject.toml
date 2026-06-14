@@ -16,8 +16,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Install the adapter matching your database:
+# Install the PostgreSQL adapter when using a Postgres database:
 #   uv sync --extra postgres
-#   uv sync --extra mysql
 postgres = ["psycopg2-binary>=2.9"]
-mysql = ["mysqlclient>=2.2"]
