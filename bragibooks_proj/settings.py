@@ -101,9 +101,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'bragibooks_proj.wsgi.application'
 
 # Database
-# Set DATABASE_URL to configure any Django-supported database.
-# Supported schemes: sqlite://, postgres://, mysql://, oracle://
-# Default: SQLite stored in /config/db.sqlite3
+# dj_database_url.config() reads the DATABASE_URL environment variable automatically.
+# If DATABASE_URL is not set, it falls back to the default below (SQLite).
+# To use PostgreSQL, set DATABASE_URL=postgres://user:pass@host:5432/dbname
 DATABASES = {
     'default': dj_database_url.config(
         default=f"sqlite:///{os.path.join(CONFIG_DIR, 'db.sqlite3')}",
