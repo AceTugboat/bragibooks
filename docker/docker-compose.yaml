@@ -40,13 +40,7 @@ services:
       - UID=1001
       - GID=1001
       - RUN_WORKER=false
-      # Set DATABASE_URL to use any Django-supported database.
-      # SQLite (default, no external service needed):
-      #   DATABASE_URL=sqlite:////config/db.sqlite3
-      # PostgreSQL (requires psycopg2-binary installed):
-      #   DATABASE_URL=postgres://user:password@db:5432/bragibooks
-      # MySQL (requires mysqlclient installed):
-      #   DATABASE_URL=mysql://user:password@db:3306/bragibooks
+      # Defaults to SQLite. For PostgreSQL: DATABASE_URL=postgres://user:pass@db:5432/bragibooks
       - DATABASE_URL=${DATABASE_URL:-sqlite:////config/db.sqlite3}
       # Passkeys (optional — required only if you want passwordless login)
       # - PASSKEY_RP_ID=bragibooks.mydomain.com
