@@ -77,13 +77,11 @@ def run_m4b_merge(asin: str):
         book.status.save()
         return
 
-    book.dest_path = Path(
-        f"\""
+    book.dest_path = (
         f"{m4b.book_output}/"
         f"{audible.fetch_api_data(config.api_url)['authors'][0]}/"
         f"{book.title}/"
         f"{book.title}.m4b"
-        f"\""
     )
     book.status.status = StatusChoices.DONE
     book.status.save()
