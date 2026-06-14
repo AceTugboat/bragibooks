@@ -25,7 +25,7 @@ def process_match(entries: list[MatchEntry]) -> list[Book]:
     if not entries:
         raise MatchValidationError("No entries provided")
 
-    existing_settings = Setting.objects.first()
+    existing_settings = Setting.load()
     if not existing_settings:
         raise MatchValidationError(
             "Settings not configured. Please complete setup in Settings."

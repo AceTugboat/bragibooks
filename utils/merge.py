@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def set_configs():
-    existing_settings = Setting.objects.first()
+    existing_settings = Setting.load()
     if existing_settings:
         config.api_url = existing_settings.api_url
         config.junk_dir = existing_settings.completed_directory

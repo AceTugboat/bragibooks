@@ -233,7 +233,7 @@ class SettingsAPI(View):
     
     def get(self, request):
         try:
-            settings = Setting.objects.first()
+            settings = Setting.load()
             if settings:
                 return JsonResponse({
                     'id': settings.id,
@@ -252,7 +252,7 @@ class SettingsAPI(View):
     def post(self, request):
         try:
             data = json.loads(request.body)
-            existing_settings = Setting.objects.first()
+            existing_settings = Setting.load()
             
             if existing_settings:
                 # Update existing
