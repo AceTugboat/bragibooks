@@ -26,6 +26,7 @@
 
 - [About & Usage](#about)
 - [Getting Started](#getting_started)
+- [Database](#database)
 - [Passkeys](#passkeys)
 - [Development](#development)
 
@@ -105,7 +106,8 @@ services:
       - UID=1000
       - GID=1000
       - RUN_WORKER=true
-      # Passkeys (optional — omit if you only want username/password login)
+      # For PostgreSQL: - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
+      # Passkeys (optional):
       # - PASSKEY_RP_ID=bragibooks.mydomain.com
       # - PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
@@ -113,7 +115,7 @@ services:
       - path/to/input:/downloads
       - path/to/output:/audiobooks
     ports:
-      - 8000:8000
+      - "8000:8000"
     restart: unless-stopped
 ```
 
@@ -129,7 +131,8 @@ services:
       - LOG_LEVEL=INFO
       - UID=1000
       - GID=1000
-      # Passkeys (optional — omit if you only want username/password login)
+      # For PostgreSQL: - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
+      # Passkeys (optional):
       # - PASSKEY_RP_ID=bragibooks.mydomain.com
       # - PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
@@ -137,7 +140,7 @@ services:
       - path/to/input:/downloads
       - path/to/output:/audiobooks
     ports:
-      - 8000:8000
+      - "8000:8000"
     restart: unless-stopped
 
   worker:
@@ -148,58 +151,12 @@ services:
       - LOG_LEVEL=INFO
       - UID=1000
       - GID=1000
+      # For PostgreSQL: - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
     volumes:
       - path/to/config:/config
       - path/to/input:/downloads
       - path/to/output:/audiobooks
     restart: unless-stopped
-```
-
-With PostgreSQL (recommended for production):
-```yaml
-services:
-  bragi:
-    image: acetugboat/bragibooks:main
-    container_name: bragibooks
-    command: prod
-    environment:
-      - HOSTED_DOMAIN=bragibooks.mydomain.com
-      - LOG_LEVEL=INFO
-      - UID=1000
-      - GID=1000
-      - RUN_WORKER=true
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=${DB_USER:-bragibooks}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME:-bragibooks}
-    volumes:
-      - path/to/config:/config
-      - path/to/input:/downloads
-      - path/to/output:/audiobooks
-    ports:
-      - 8000:8000
-    depends_on:
-      - db
-    restart: unless-stopped
-
-  db:
-    image: postgres:18-alpine
-    container_name: bragibooks_db
-    environment:
-      - POSTGRES_DB=${DB_NAME:-bragibooks}
-      - POSTGRES_USER=${DB_USER:-bragibooks}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-```
-
-Create a `.env` file next to your `docker-compose.yaml` with your database password (never commit this file):
-```bash
-DB_PASSWORD=your-strong-password-here
 ```
 
 #### Direct install (Gunicorn)
@@ -217,6 +174,34 @@ gunicorn bragibooks_proj.wsgi \
   --worker-class=gthread \
   --enable-stdio-inheritance
 ```
+
+## Database <a name = "database"></a>
+
+**SQLite is the default — no database setup required.** The database file is created automatically at `/config/db.sqlite3` on first run. This is the same approach used by Sonarr, Radarr, and the rest of the *arr stack and works well for personal and household installs.
+
+To use PostgreSQL, add `DATABASE_URL` to the environment section of your compose file:
+
+```yaml
+- DATABASE_URL=postgres://bragibooks:password@db:5432/bragibooks
+```
+
+The PostgreSQL adapter is bundled in the image — no extra steps required. If you need a local Postgres instance, add a `db` service:
+
+```yaml
+  db:
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_DB=bragibooks
+      - POSTGRES_USER=bragibooks
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+PostgreSQL is recommended for multi-user installs or NAS deployments where you already have a shared Postgres instance running.
 
 ## Passkeys <a name = "passkeys"></a>
 

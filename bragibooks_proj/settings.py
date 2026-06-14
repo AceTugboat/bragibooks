@@ -101,15 +101,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'bragibooks_proj.wsgi.application'
 
 # Database
-if os.environ.get("DB_HOST"):
-    DATABASE_URL = f"postgres://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@{os.environ.get('DB_HOST')}:{os.environ.get('DB_PORT')}/{os.environ.get('DB_NAME')}"
-else:
-    DATABASE_URL = os.environ.get("DATABASE_URL")
-
+# dj_database_url.config() reads the DATABASE_URL environment variable automatically.
+# If DATABASE_URL is not set, it falls back to the default below (SQLite).
+# To use PostgreSQL, set DATABASE_URL=postgres://user:pass@host:5432/dbname
 DATABASES = {
     'default': dj_database_url.config(
-        default=DATABASE_URL or f"sqlite:///{os.path.join(CONFIG_DIR, 'db.sqlite3')}",
-        conn_max_age=600
+        default=f"sqlite:///{os.path.join(CONFIG_DIR, 'db.sqlite3')}",
+        conn_max_age=600,
     )
 }
 

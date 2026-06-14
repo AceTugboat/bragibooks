@@ -1,5 +1,5 @@
 services:
-  # Development: Django runserver + frontend built assets + task worker in one container
+  # Development: Django runserver + built frontend assets + task worker in one container
   bragi-dev:
     image: bragibooks
     build:
@@ -25,7 +25,9 @@ services:
       - 8000:8000
     restart: unless-stopped
 
-  # Production: Gunicorn web server with PostgreSQL — pair with the worker service or set RUN_WORKER=true
+  # Production web server (Gunicorn)
+  # DATABASE_URL defaults to SQLite — no config needed.
+  # To use PostgreSQL, uncomment DATABASE_URL and add a db service (see README).
   bragi:
     image: acetugboat/bragibooks
     container_name: bragibooks
@@ -38,28 +40,18 @@ services:
       - UID=1001
       - GID=1001
       - RUN_WORKER=false
-      # Set this to your deployment domain to configure CORS and CSRF
-      # - HOSTED_DOMAIN=yourdomain.com
-      # Required for passkey authentication — must match your deployment domain
-      # - PASSKEY_RP_ID=yourdomain.com
-      # - PASSKEY_RP_NAME=Bragibooks
-      # - PASSKEY_ORIGIN=https://yourdomain.com
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=${DB_USER:-bragibooks}
-      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set in your .env file}
-      - DB_NAME=${DB_NAME:-bragibooks}
+      # - DATABASE_URL=postgres://bragibooks:password@db:5432/bragibooks
+      # - PASSKEY_RP_ID=bragibooks.mydomain.com
+      # - PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
-      - /downloads:/downloads # Map to where files are downloaded for processing
-      - /audiobooks:/audiobooks # Map to where processed audiobooks are stored
+      - /downloads:/downloads
+      - /audiobooks:/audiobooks
       - /config:/config
     ports:
       - "8000:8000"
-    depends_on:
-      - db
     restart: unless-stopped
 
-  # Worker: Standalone task queue processor — run alongside the production web container
+  # Production task queue worker (optional — or set RUN_WORKER=true on the bragi service)
   worker:
     image: acetugboat/bragibooks
     container_name: bragibooks-worker
@@ -71,30 +63,9 @@ services:
       - DEBUG=False
       - UID=1001
       - GID=1001
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=${DB_USER:-bragibooks}
-      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set in your .env file}
-      - DB_NAME=${DB_NAME:-bragibooks}
+      # - DATABASE_URL=postgres://bragibooks:password@db:5432/bragibooks
     volumes:
       - /downloads:/downloads
       - /audiobooks:/audiobooks
       - /config:/config
-    depends_on:
-      - db
     restart: unless-stopped
-
-  db:
-    image: postgres:18-alpine
-    container_name: bragibooks_db
-    profiles:
-      - production
-    environment:
-      - POSTGRES_DB=${DB_NAME:-bragibooks}
-      - POSTGRES_USER=${DB_USER:-bragibooks}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set in your .env file}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
