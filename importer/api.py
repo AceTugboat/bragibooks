@@ -238,7 +238,7 @@ class SettingsAPI(View):
                 return JsonResponse({
                     'id': settings.id,
                     'api_url': settings.api_url,
-                    'completed_directory': settings.completed_directory,
+                    'archive_directory': settings.archive_directory,
                     'input_directory': settings.input_directory,
                     'num_cpus': settings.num_cpus,
                     'output_directory': settings.output_directory,
@@ -256,7 +256,7 @@ class SettingsAPI(View):
             
             if existing_settings:
                 # Update existing
-                for field in ['api_url', 'completed_directory', 'input_directory', 
+                for field in ['api_url', 'archive_directory', 'input_directory',
                              'num_cpus', 'output_directory', 'output_scheme']:
                     if field in data:
                         setattr(existing_settings, field, data[field])
@@ -269,7 +269,7 @@ class SettingsAPI(View):
             return JsonResponse({
                 'id': settings.id,
                 'api_url': settings.api_url,
-                'completed_directory': settings.completed_directory,
+                'archive_directory': settings.archive_directory,
                 'input_directory': settings.input_directory,
                 'num_cpus': settings.num_cpus,
                 'output_directory': settings.output_directory,
@@ -277,6 +277,36 @@ class SettingsAPI(View):
             })
         except Exception as e:
             logger.error(f"Error updating settings: {e}")
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+class SettingsVerifyAPI(View):
+    """Verify that configured directory paths exist and are writable."""
+
+    def get(self, request):
+        import os
+        try:
+            settings_obj = Setting.objects.first()
+            if not settings_obj:
+                return JsonResponse({'error': 'Settings not configured'}, status=400)
+
+            def check_path(path_str):
+                if not path_str:
+                    return 'not_configured'
+                p = Path(path_str)
+                if not p.is_dir():
+                    return 'missing'
+                if not os.access(p, os.W_OK):
+                    return 'not_writable'
+                return 'ok'
+
+            return JsonResponse({
+                'input_directory': check_path(settings_obj.input_directory),
+                'output_directory': check_path(settings_obj.output_directory),
+                'archive_directory': check_path(settings_obj.archive_directory),
+            })
+        except Exception as e:
+            logger.error(f"Error verifying paths: {e}")
             return JsonResponse({'error': str(e)}, status=500)
 
 

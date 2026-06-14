@@ -96,7 +96,7 @@ class Narrator(models.Model):
 
 class Setting(models.Model):
     api_url = models.CharField(max_length=255)
-    completed_directory = models.CharField(max_length=255)
+    archive_directory = models.CharField(max_length=255, blank=True, default='')
     input_directory = models.CharField(max_length=255)
     num_cpus = models.IntegerField()
     output_directory = models.CharField(max_length=255)
