@@ -10,7 +10,7 @@ const SettingsPage: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
     const [settings, setSettings] = useState<Settings>({
         api_url: 'https://api.audnex.us',
-        completed_directory: '/input/done',
+        archive_directory: '',
         input_directory: '/input',
         num_cpus: 0,
         output_directory: '/output',
@@ -22,6 +22,8 @@ const SettingsPage: React.FC = () => {
     const [success, setSuccess] = useState(false);
     const [showUnsavedModal, setShowUnsavedModal] = useState(false);
     const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+    const [pathStatus, setPathStatus] = useState<Record<string, string> | null>(null);
+    const [verifyLoading, setVerifyLoading] = useState(false);
 
     // Check if settings have been modified
     const isDirty = useMemo(() => {
@@ -67,6 +69,7 @@ const SettingsPage: React.FC = () => {
             await settingsApi.update(settings);
             setOriginalSettings(settings);
             setSuccess(true);
+            setPathStatus(null);
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
             setError(getErrorMessage(err));
@@ -76,6 +79,19 @@ const SettingsPage: React.FC = () => {
     const handleChange = (field: keyof Settings, value: string | number) => {
         setSettings(prev => ({ ...prev, [field]: value }));
         setSuccess(false);
+        setPathStatus(null);
+    };
+
+    const handleVerifyPaths = async () => {
+        try {
+            setVerifyLoading(true);
+            const status = await settingsApi.verifyPaths();
+            setPathStatus(status);
+        } catch (err) {
+            setError(getErrorMessage(err));
+        } finally {
+            setVerifyLoading(false);
+        }
     };
 
     const handleSaveAndLeave = async () => {
@@ -116,6 +132,24 @@ const SettingsPage: React.FC = () => {
         }
     };
 
+    const renderPathStatus = (field: string) => {
+        if (!pathStatus || !(field in pathStatus)) return null;
+        const status = pathStatus[field];
+        if (status === 'ok') {
+            return <small className="text-success d-block mt-1"><i className="fa-solid fa-check me-1"></i>OK</small>;
+        }
+        if (status === 'missing') {
+            return <small className="text-danger d-block mt-1"><i className="fa-solid fa-xmark me-1"></i>Directory not found</small>;
+        }
+        if (status === 'not_writable') {
+            return <small className="text-warning d-block mt-1"><i className="fa-solid fa-triangle-exclamation me-1"></i>Not writable</small>;
+        }
+        if (status === 'not_configured') {
+            return <small className="text-secondary d-block mt-1">Not configured</small>;
+        }
+        return null;
+    };
+
     if (loading) {
         return (
             <div className="text-center mt-5">
@@ -131,6 +165,23 @@ const SettingsPage: React.FC = () => {
             <PageHeader
                 title="Settings"
             >
+                <button
+                    className="btn btn-outline-secondary me-2"
+                    onClick={handleVerifyPaths}
+                    disabled={verifyLoading}
+                >
+                    {verifyLoading ? (
+                        <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Testing...
+                        </>
+                    ) : (
+                        <>
+                            <i className="fa-solid fa-circle-check me-2"></i>
+                            Test Paths
+                        </>
+                    )}
+                </button>
                 <button
                     className="btn btn-primary"
                     onClick={handleSave}
@@ -189,6 +240,8 @@ const SettingsPage: React.FC = () => {
                                 value={settings.input_directory}
                                 onChange={(e) => handleChange('input_directory', e.target.value)}
                             />
+                            <div className="form-text">Where your source audiobook files live</div>
+                            {renderPathStatus('input_directory')}
                         </div>
 
                         <div className="mb-3">
@@ -199,16 +252,25 @@ const SettingsPage: React.FC = () => {
                                 value={settings.output_directory}
                                 onChange={(e) => handleChange('output_directory', e.target.value)}
                             />
+                            <div className="form-text">Where finished .m4b files are written</div>
+                            {renderPathStatus('output_directory')}
                         </div>
 
                         <div className="mb-3">
-                            <label className="form-label">Completed Directory</label>
+                            <label className="form-label">Archive Directory</label>
                             <input
                                 type="text"
                                 className="form-control"
-                                value={settings.completed_directory}
-                                onChange={(e) => handleChange('completed_directory', e.target.value)}
+                                value={settings.archive_directory}
+                                onChange={(e) => handleChange('archive_directory', e.target.value)}
                             />
+                            <div className="form-text">Where source files are moved after processing (leave blank to keep in place)</div>
+                            {settings.archive_directory && settings.input_directory && settings.archive_directory.startsWith(settings.input_directory) && (
+                                <div className="alert alert-warning py-2 mb-2 mt-1" role="alert">
+                                    <small>Archive directory is inside Input directory. The app may attempt to re-process archived files.</small>
+                                </div>
+                            )}
+                            {renderPathStatus('archive_directory')}
                         </div>
 
                         <div className="mb-3">
@@ -233,7 +295,7 @@ const SettingsPage: React.FC = () => {
                                 onChange={(e) => handleChange('output_scheme', e.target.value)}
                             />
                             <div className="form-text">
-                                Use "/" for subdirectories. Supported keywords: asin, author, narrator, series_name, series_position, subtitle, title, year
+                                Available tokens: {'{author}'}, {'{title}'}, {'{series_name}'}, {'{series_position}'}, {'{subtitle}'}, {'{year}'}, {'{asin}'}, {'{narrator}'}
                             </div>
                         </div>
                     </div>

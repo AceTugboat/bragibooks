@@ -19,7 +19,7 @@ def set_configs():
     existing_settings = Setting.load()
     if existing_settings:
         config.api_url = existing_settings.api_url
-        config.junk_dir = existing_settings.completed_directory
+        config.junk_dir = existing_settings.archive_directory
         config.num_cpus = (
             existing_settings.num_cpus if existing_settings.num_cpus > 0
             else os.cpu_count()
