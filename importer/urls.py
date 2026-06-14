@@ -1,12 +1,11 @@
 from django.urls import path, re_path
 
-from .api import (
-    AsinSearchAPI, BookDetailAPI, BooksListAPI, DirectoryListAPI,
-    ImportStartAPI, MatchAPI, SettingsAPI, SettingsVerifyAPI, VersionsAPI,
-)
-from .auth_api import CheckSetupAPI, CurrentUserAPI, InitialSetupAPI, LoginAPI, LogoutAPI
+from .api.auth import CheckSetupAPI, CurrentUserAPI, InitialSetupAPI, LoginAPI, LogoutAPI
+from .api.books import BookDetailAPI, BooksListAPI
+from .api.config import SettingsAPI, SettingsVerifyAPI, VersionsAPI
+from .api.import_pipeline import AsinSearchAPI, DirectoryListAPI, ImportStartAPI, MatchAPI
+from .api.users import UserDetailAPI, UsersListAPI
 from .spa_view import SPAView
-from .users_api import UserDetailAPI, UsersListAPI
 
 api_patterns = [
     # Auth
@@ -37,6 +36,5 @@ api_patterns = [
 ]
 
 urlpatterns = api_patterns + [
-    # Catch-all: serve the React SPA for every non-API route
     re_path(r'^.*$', SPAView.as_view(), name='spa'),
 ]
