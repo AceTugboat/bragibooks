@@ -26,6 +26,8 @@
 
 - [About & Usage](#about)
 - [Getting Started](#getting_started)
+- [Database](#database)
+- [Passkeys](#passkeys)
 - [Development](#development)
 
 ## About & Usage <a name = "about"></a>
@@ -88,7 +90,7 @@ Separate containers:
 
 #### Docker Compose
 
-Single container (web + worker):
+Single container (web + worker), SQLite default:
 ```yaml
 services:
   bragi:
@@ -101,12 +103,17 @@ services:
       - UID=1000
       - GID=1000
       - RUN_WORKER=true
+      # DATABASE_URL defaults to SQLite at /config/db.sqlite3 — no extra config needed
+      # To use PostgreSQL: - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
+      # To use MySQL:      - DATABASE_URL=mysql://user:pass@db:3306/bragibooks
+      # Passkeys (optional): - PASSKEY_RP_ID=bragibooks.mydomain.com
+      #                        PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
       - path/to/config:/config
       - path/to/input:/downloads
       - path/to/output:/audiobooks
     ports:
-      - 8000:8000
+      - "8000:8000"
     restart: unless-stopped
 ```
 
@@ -122,12 +129,13 @@ services:
       - LOG_LEVEL=INFO
       - UID=1000
       - GID=1000
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////config/db.sqlite3}
     volumes:
       - path/to/config:/config
       - path/to/input:/downloads
       - path/to/output:/audiobooks
     ports:
-      - 8000:8000
+      - "8000:8000"
     restart: unless-stopped
 
   worker:
@@ -138,12 +146,19 @@ services:
       - LOG_LEVEL=INFO
       - UID=1000
       - GID=1000
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////config/db.sqlite3}
     volumes:
       - path/to/config:/config
       - path/to/input:/downloads
       - path/to/output:/audiobooks
     restart: unless-stopped
 ```
+
+To use an external database, create a `.env` file next to your compose file (never commit this):
+```bash
+DATABASE_URL=postgres://bragibooks:yourpassword@db:5432/bragibooks
+```
+Then add the database as a service — see the [Database](#database) section for examples.
 
 #### Direct install (Gunicorn)
 ```bash
@@ -160,6 +175,77 @@ gunicorn bragibooks_proj.wsgi \
   --worker-class=gthread \
   --enable-stdio-inheritance
 ```
+
+## Database <a name = "database"></a>
+
+Bragibooks supports any Django-compatible database via the `DATABASE_URL` environment variable. The default is SQLite, which requires no configuration and works well for personal or small installs.
+
+| Database | `DATABASE_URL` format | Extra dependency |
+|---|---|---|
+| SQLite (default) | `sqlite:////config/db.sqlite3` | None |
+| PostgreSQL | `postgres://user:pass@host:5432/dbname` | `psycopg2-binary` |
+| MySQL / MariaDB | `mysql://user:pass@host:3306/dbname` | `mysqlclient` |
+
+### SQLite
+
+No configuration required. The database file is created at `/config/db.sqlite3` on first run.
+
+### PostgreSQL
+
+Add the psycopg2 adapter to your installation:
+
+```bash
+uv sync --extra postgres
+```
+
+Then set `DATABASE_URL` in your environment or `.env` file:
+```bash
+DATABASE_URL=postgres://bragibooks:yourpassword@localhost:5432/bragibooks
+```
+
+### MySQL / MariaDB
+
+Install the mysqlclient adapter:
+
+```bash
+uv sync --extra mysql
+```
+
+Then set `DATABASE_URL`:
+```bash
+DATABASE_URL=mysql://bragibooks:yourpassword@localhost:3306/bragibooks
+```
+
+### Docker
+
+When running in Docker, set `DATABASE_URL` as an environment variable or in a `.env` file next to your compose file. The database adapter must be present in the image — the official image includes only the SQLite adapter. For PostgreSQL or MySQL, build a custom image layer or use the compose `extends` pattern to add the adapter.
+
+## Passkeys <a name = "passkeys"></a>
+
+Bragibooks supports passwordless login via passkeys — device biometrics (Touch ID, Face ID, Windows Hello) or hardware security keys (YubiKey, etc.). Passkeys are entirely optional: username/password login always works and requires no configuration changes.
+
+### Setup
+
+1. Log in with your username and password as usual
+2. Go to **Settings > Security**
+3. Click **Add a Passkey**, give it a name (e.g. "MacBook Touch ID"), and follow your device's prompt
+4. On future logins, click **Sign in with passkey** on the login page
+
+You can register multiple passkeys (one per device) and remove them at any time from the Security settings page.
+
+### Production requirements
+
+Passkeys use the WebAuthn standard, which browsers enforce over HTTPS only (or `http://localhost` for local development). Set these three environment variables on your production deployment:
+
+| Variable | Description | Example |
+|---|---|---|
+| `PASSKEY_RP_ID` | Your domain, no scheme prefix | `bragibooks.mydomain.com` |
+| `PASSKEY_RP_NAME` | Name shown during registration prompt | `Bragibooks` |
+| `PASSKEY_ORIGIN` | Full origin including scheme | `https://bragibooks.mydomain.com` |
+
+`PASSKEY_RP_ID` must be a registrable domain suffix of your origin — it cannot be an IP address. If you access Bragibooks at `https://bragibooks.mydomain.com`, the RP ID can be either `bragibooks.mydomain.com` or `mydomain.com`.
+
+If these variables are not set, the passkey button will not appear on the login page and passkey registration will be unavailable — all other functionality continues to work normally.
 
 ## Development <a name = "development"></a>
 
