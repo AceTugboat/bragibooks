@@ -38,9 +38,9 @@ services:
       - RUN_WORKER=false
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_USER=bragibooks
-      - DB_PASSWORD=bragibooks
-      - DB_NAME=bragibooks
+      - DB_USER=${DB_USER:-bragibooks}
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set in your .env file}
+      - DB_NAME=${DB_NAME:-bragibooks}
     volumes:
       - /downloads:/downloads # Map to where files are downloaded for processing
       - /audiobooks:/audiobooks # Map to where processed audiobooks are stored
@@ -64,9 +64,9 @@ services:
       - GID=1001
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_USER=bragibooks
-      - DB_PASSWORD=bragibooks
-      - DB_NAME=bragibooks
+      - DB_USER=${DB_USER:-bragibooks}
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set in your .env file}
+      - DB_NAME=${DB_NAME:-bragibooks}
     volumes:
       - /downloads:/downloads
       - /audiobooks:/audiobooks
@@ -81,9 +81,9 @@ services:
     profiles:
       - production
     environment:
-      - POSTGRES_DB=bragibooks
-      - POSTGRES_USER=bragibooks
-      - POSTGRES_PASSWORD=bragibooks
+      - POSTGRES_DB=${DB_NAME:-bragibooks}
+      - POSTGRES_USER=${DB_USER:-bragibooks}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set in your .env file}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
