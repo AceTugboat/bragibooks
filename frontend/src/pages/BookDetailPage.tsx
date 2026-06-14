@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import type { Book } from '../types';
 import { bookApi, getErrorMessage } from '../api/services';
+import { useData } from '../context/DataContext';
 
 const BookDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -11,6 +12,9 @@ const BookDetailPage: React.FC = () => {
     const [book, setBook] = useState<Book | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const { refreshBooks } = useData();
 
     useEffect(() => {
         if (id) {
@@ -35,9 +39,18 @@ const BookDetailPage: React.FC = () => {
         navigate('/', { state: location.state });
     };
 
-    const handleDelete = () => {
-        // TODO: Implement delete functionality
-        console.log('Delete book:', id);
+    const handleDelete = async () => {
+        try {
+            setDeleting(true);
+            await bookApi.delete(id!);
+            await refreshBooks();
+            navigate('/');
+        } catch (err) {
+            setError(getErrorMessage(err));
+            setShowDeleteModal(false);
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const handleFixMetadata = () => {
@@ -84,6 +97,7 @@ const BookDetailPage: React.FC = () => {
     };
 
     return (
+        <>
         <div className="book-detail-page">
             <PageHeader
                 title={book.title}
@@ -100,7 +114,7 @@ const BookDetailPage: React.FC = () => {
                 <div className="d-flex gap-2">
                     <button
                         className="btn btn-outline-danger btn-sm"
-                        onClick={handleDelete}
+                        onClick={() => setShowDeleteModal(true)}
                         title="Delete Book"
                     >
                         <i className="fa-solid fa-trash me-1"></i>
@@ -262,6 +276,52 @@ const BookDetailPage: React.FC = () => {
                 </div>
             </div>
         </div>
+
+        {showDeleteModal && (
+                <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Delete Book</h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setShowDeleteModal(false)}
+                                    disabled={deleting}
+                                />
+                            </div>
+                            <div className="modal-body">
+                                <p>Are you sure you want to delete <strong>{book.title}</strong>?</p>
+                                <p className="text-muted mb-0">This removes the record from Bragibooks but does not delete audio files from disk.</p>
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowDeleteModal(false)}
+                                    disabled={deleting}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-danger"
+                                    onClick={handleDelete}
+                                    disabled={deleting}
+                                >
+                                    {deleting ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" />
+                                            Deleting...
+                                        </>
+                                    ) : 'Delete'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        )}
+        </>
     );
 };
 

@@ -62,6 +62,10 @@ export const bookApi = {
         const response = await apiClient.get<{ input_dirs: string[] }>('/api/match/');
         return response.data.input_dirs;
     },
+
+    delete: async (id: string | number): Promise<void> => {
+        await apiClient.delete(`/api/books/${id}/`);
+    },
 };
 
 // ASIN Search
