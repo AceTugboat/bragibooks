@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import LibraryBookCard from '../components/LibraryBookCard';
 import Pagination from '../components/Pagination';
@@ -92,6 +92,22 @@ const BooksPage: React.FC = () => {
         return (
             <div className="alert alert-danger m-4" role="alert">
                 {errorBooks}
+            </div>
+        );
+    }
+
+    if (books.done.length === 0) {
+        return (
+            <div className="library-page">
+                <PageHeader title="My Library" />
+                <div className="d-flex flex-column align-items-center justify-content-center text-center py-5 my-5">
+                    <i className="fa-solid fa-headphones fa-4x mb-4 text-muted"></i>
+                    <h3 className="mb-2">Your library is empty</h3>
+                    <p className="text-muted mb-4">Import your first audiobook to get started.</p>
+                    <Link to="/import" className="btn btn-primary btn-lg">
+                        Import your first book →
+                    </Link>
+                </div>
             </div>
         );
     }
