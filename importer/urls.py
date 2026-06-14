@@ -1,7 +1,7 @@
 from django.urls import path, re_path
 
 from .api.auth import CheckSetupAPI, CurrentUserAPI, InitialSetupAPI, LoginAPI, LogoutAPI
-from .api.books import BookDetailAPI, BooksListAPI
+from .api.books import BookDetailAPI, BookReprocessAPI, BooksListAPI
 from .api.config import SettingsAPI, SettingsVerifyAPI, VersionsAPI
 from .api.import_pipeline import AsinSearchAPI, DirectoryListAPI, ImportStartAPI, MatchAPI
 from .api.users import UserDetailAPI, UsersListAPI
@@ -18,6 +18,7 @@ api_patterns = [
     # Books
     path('api/books/', BooksListAPI.as_view(), name='api-books'),
     path('api/books/<int:pk>/', BookDetailAPI.as_view(), name='api-book-detail'),
+    path('api/books/<int:pk>/reprocess/', BookReprocessAPI.as_view(), name='api-book-reprocess'),
 
     # Import / match
     path('api/match/', MatchAPI.as_view(), name='api-match'),
