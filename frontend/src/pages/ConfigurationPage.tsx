@@ -24,6 +24,27 @@ const SettingsPage: React.FC = () => {
     const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
     const [pathStatus, setPathStatus] = useState<Record<string, string> | null>(null);
     const [verifyLoading, setVerifyLoading] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+    const validate = (current: Settings): Record<string, string> => {
+        const errors: Record<string, string> = {};
+        if (!current.api_url.startsWith('http://') && !current.api_url.startsWith('https://')) {
+            errors.api_url = 'Must start with http:// or https://';
+        }
+        if (!current.input_directory || !current.input_directory.startsWith('/')) {
+            errors.input_directory = 'Must be an absolute path starting with /';
+        }
+        if (!current.output_directory || !current.output_directory.startsWith('/')) {
+            errors.output_directory = 'Must be an absolute path starting with /';
+        }
+        if (current.archive_directory && !current.archive_directory.startsWith('/')) {
+            errors.archive_directory = 'Must be an absolute path starting with /';
+        }
+        if (!Number.isInteger(Number(current.num_cpus)) || Number(current.num_cpus) < 0) {
+            errors.num_cpus = 'Must be a non-negative integer';
+        }
+        return errors;
+    };
 
     // Check if settings have been modified
     const isDirty = useMemo(() => {
@@ -64,6 +85,9 @@ const SettingsPage: React.FC = () => {
     };
 
     const handleSave = async () => {
+        const errors = validate(settings);
+        setFieldErrors(errors);
+        if (Object.keys(errors).length > 0) return;
         try {
             setError(null);
             await settingsApi.update(settings);
@@ -77,9 +101,11 @@ const SettingsPage: React.FC = () => {
     };
 
     const handleChange = (field: keyof Settings, value: string | number) => {
-        setSettings(prev => ({ ...prev, [field]: value }));
+        const updated = { ...settings, [field]: value };
+        setSettings(updated);
         setSuccess(false);
         setPathStatus(null);
+        setFieldErrors(validate(updated));
     };
 
     const handleVerifyPaths = async () => {
@@ -185,7 +211,7 @@ const SettingsPage: React.FC = () => {
                 <button
                     className="btn btn-primary"
                     onClick={handleSave}
-                    disabled={!isDirty}
+                    disabled={!isDirty || Object.keys(fieldErrors).length > 0}
                 >
                     <i className="fas fa-save me-2"></i>
                     Save
@@ -226,21 +252,25 @@ const SettingsPage: React.FC = () => {
                             <label className="form-label">API URL</label>
                             <input
                                 type="text"
-                                className="form-control"
+                                className={`form-control${fieldErrors.api_url ? ' is-invalid' : ''}`}
                                 value={settings.api_url}
                                 onChange={(e) => handleChange('api_url', e.target.value)}
                             />
+                            {fieldErrors.api_url && <div className="invalid-feedback">{fieldErrors.api_url}</div>}
                         </div>
 
                         <div className="mb-3">
                             <label className="form-label">Input Directory</label>
                             <input
                                 type="text"
-                                className="form-control"
+                                className={`form-control${fieldErrors.input_directory ? ' is-invalid' : ''}`}
                                 value={settings.input_directory}
                                 onChange={(e) => handleChange('input_directory', e.target.value)}
                             />
-                            <div className="form-text">Where your source audiobook files live</div>
+                            {fieldErrors.input_directory
+                                ? <div className="invalid-feedback">{fieldErrors.input_directory}</div>
+                                : <div className="form-text">Where your source audiobook files live</div>
+                            }
                             {renderPathStatus('input_directory')}
                         </div>
 
@@ -248,11 +278,14 @@ const SettingsPage: React.FC = () => {
                             <label className="form-label">Output Directory</label>
                             <input
                                 type="text"
-                                className="form-control"
+                                className={`form-control${fieldErrors.output_directory ? ' is-invalid' : ''}`}
                                 value={settings.output_directory}
                                 onChange={(e) => handleChange('output_directory', e.target.value)}
                             />
-                            <div className="form-text">Where finished .m4b files are written</div>
+                            {fieldErrors.output_directory
+                                ? <div className="invalid-feedback">{fieldErrors.output_directory}</div>
+                                : <div className="form-text">Where finished .m4b files are written</div>
+                            }
                             {renderPathStatus('output_directory')}
                         </div>
 
@@ -260,11 +293,14 @@ const SettingsPage: React.FC = () => {
                             <label className="form-label">Archive Directory</label>
                             <input
                                 type="text"
-                                className="form-control"
+                                className={`form-control${fieldErrors.archive_directory ? ' is-invalid' : ''}`}
                                 value={settings.archive_directory}
                                 onChange={(e) => handleChange('archive_directory', e.target.value)}
                             />
-                            <div className="form-text">Where source files are moved after processing (leave blank to keep in place)</div>
+                            {fieldErrors.archive_directory
+                                ? <div className="invalid-feedback">{fieldErrors.archive_directory}</div>
+                                : <div className="form-text">Where source files are moved after processing (leave blank to keep in place)</div>
+                            }
                             {settings.archive_directory && settings.input_directory && settings.archive_directory.startsWith(settings.input_directory) && (
                                 <div className="alert alert-warning py-2 mb-2 mt-1" role="alert">
                                     <small>Archive directory is inside Input directory. The app may attempt to re-process archived files.</small>
@@ -277,13 +313,14 @@ const SettingsPage: React.FC = () => {
                             <label className="form-label">Number of CPUs</label>
                             <input
                                 type="number"
-                                className="form-control"
+                                className={`form-control${fieldErrors.num_cpus ? ' is-invalid' : ''}`}
                                 value={settings.num_cpus}
                                 onChange={(e) => handleChange('num_cpus', parseInt(e.target.value) || 0)}
                             />
-                            <div className="form-text">
-                                Number of CPU cores to use for processing (0 = auto)
-                            </div>
+                            {fieldErrors.num_cpus
+                                ? <div className="invalid-feedback">{fieldErrors.num_cpus}</div>
+                                : <div className="form-text">Number of CPU cores to use for processing (0 = auto)</div>
+                            }
                         </div>
 
                         <div className="mb-3">
