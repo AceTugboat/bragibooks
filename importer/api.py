@@ -13,6 +13,7 @@ import json
 import requests
 
 from .models import Book, Setting, StatusChoices
+from .services.match import MatchEntry, MatchValidationError, process_match
 from .version import __version__ as bragibooks_version
 from utils.search_tools import ScoreTool, SearchTool
 import django
@@ -210,21 +211,20 @@ class MatchAPI(View):
     @method_decorator(ensure_csrf_cookie)
     def post(self, request):
         try:
-            # Import here to avoid circular imports
-            from .views import MatchView
-            
-            # Reuse the existing match view logic
-            match_view = MatchView()
-            match_view.request = request
-            result = match_view.post(request)
-            
-            # If it's a redirect, return success
-            if result.status_code == 302:
-                return JsonResponse({'success': True})
-            else:
-                return result
+            data = json.loads(request.body)
+            entries = [
+                MatchEntry(src_path=k, asin=v)
+                for k, v in data.items()
+                if k and v
+            ]
+            books = process_match(entries)
+            return JsonResponse({'success': True, 'books_queued': len(books)})
+        except MatchValidationError as e:
+            return JsonResponse({'error': str(e)}, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON body'}, status=400)
         except Exception as e:
-            logger.error(f"Error in match: {e}")
+            logger.error("Unexpected error in MatchAPI.post: %s", e)
             return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -248,7 +248,7 @@ class SettingsAPI(View):
         except Exception as e:
             logger.error(f"Error fetching settings: {e}")
             return JsonResponse({'error': str(e)}, status=500)
-    
+
     def post(self, request):
         try:
             data = json.loads(request.body)
