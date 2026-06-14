@@ -163,24 +163,31 @@ gunicorn bragibooks_proj.wsgi \
 
 ## Development <a name = "development"></a>
 
-Bragibooks has two parts: a Django backend (port 8000) and a React frontend (Vite dev server on port 5173). In production they run together in a single container — Django serves the pre-built frontend assets. In development you run them separately for hot-reload on both sides.
+Bragibooks has two parts: a Django backend (port 8000) and a React frontend. There are two development modes depending on whether you want to work inside Docker or run everything locally.
 
-### Backend
-```bash
-uv sync
-python manage.py migrate
-python manage.py runserver 0.0.0.0:8000
+### Docker dev mode
 
-# Separate terminal — task queue worker
-python manage.py db_worker
-```
+Runs `manage.py runserver` inside the container with the pre-built frontend assets from `static/dist/`. The task worker runs in the same container (`RUN_WORKER=true` is set by default in the dev profile).
 
-Or via Docker:
 ```bash
 docker compose -f docker/docker-compose.yaml --profile development up --build
 ```
 
-### Frontend
+Note: this mode serves the *built* frontend. After any frontend changes, you need to rebuild the frontend assets (`npm run build`) and restart the container.
+
+### Local dev mode
+
+Runs Django and the Vite dev server separately, giving you hot reload on both the backend and frontend.
+
+**Terminal 1 — Django backend:**
+```bash
+uv sync
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
+```
+
+**Terminal 2 — Frontend (Vite dev server):**
+
 Requires Node.js 22.12+ or 20.19+.
 ```bash
 cd frontend
@@ -188,7 +195,12 @@ npm install
 npm run dev   # Vite dev server at http://localhost:5173
 ```
 
-Vite proxies all `/api/*` requests to `http://localhost:8000` — the Django backend must be running. Open **http://localhost:5173** during development, not port 8000.
+Vite proxies all `/api/*` requests to `http://localhost:8000`. Open **http://localhost:5173** during development, not port 8000.
+
+**Terminal 3 — Task queue worker:**
+```bash
+python manage.py db_worker
+```
 
 ### Seed test data
 ```bash
