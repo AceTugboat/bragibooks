@@ -13,6 +13,7 @@ import json
 import requests
 
 from .models import Book, Setting, StatusChoices
+from .services.match import MatchEntry, MatchValidationError, process_match
 from .version import __version__ as bragibooks_version
 from utils.search_tools import ScoreTool, SearchTool
 import django
@@ -20,7 +21,16 @@ import django
 logger = logging.getLogger(__name__)
 
 
-class DirectoryListAPI(View):
+class JsonLoginRequiredMixin:
+    """Return JSON 401 for unauthenticated requests instead of redirecting to login."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        return super().dispatch(request, *args, **kwargs)
+
+
+class DirectoryListAPI(JsonLoginRequiredMixin, View):
     """API endpoint to get directory contents"""
     
     @method_decorator(ensure_csrf_cookie)
@@ -50,7 +60,7 @@ class DirectoryListAPI(View):
             return JsonResponse({'error': str(e)}, status=500)
 
 
-class ImportStartAPI(View):
+class ImportStartAPI(JsonLoginRequiredMixin, View):
     """API endpoint to start import process"""
     
     def post(self, request):
@@ -69,7 +79,7 @@ class ImportStartAPI(View):
             return JsonResponse({'error': str(e)}, status=500)
 
 
-class BooksListAPI(View):
+class BooksListAPI(JsonLoginRequiredMixin, View):
     """API endpoint to get books by status"""
     
     def get(self, request):
@@ -139,7 +149,7 @@ class BooksListAPI(View):
             return JsonResponse({'error': str(e)}, status=500)
 
 
-class BookDetailAPI(View):
+class BookDetailAPI(JsonLoginRequiredMixin, View):
     """API endpoint to get a single book by ID"""
     
     def get(self, request, pk):
@@ -194,7 +204,7 @@ class BookDetailAPI(View):
             return JsonResponse({'error': str(e)}, status=500)
 
 
-class MatchAPI(View):
+class MatchAPI(JsonLoginRequiredMixin, View):
     """API endpoint to match ASINs"""
     
     @method_decorator(ensure_csrf_cookie)
@@ -210,30 +220,29 @@ class MatchAPI(View):
     @method_decorator(ensure_csrf_cookie)
     def post(self, request):
         try:
-            # Import here to avoid circular imports
-            from .views import MatchView
-            
-            # Reuse the existing match view logic
-            match_view = MatchView()
-            match_view.request = request
-            result = match_view.post(request)
-            
-            # If it's a redirect, return success
-            if result.status_code == 302:
-                return JsonResponse({'success': True})
-            else:
-                return result
+            data = json.loads(request.body)
+            entries = [
+                MatchEntry(src_path=k, asin=v)
+                for k, v in data.items()
+                if k and v
+            ]
+            books = process_match(entries)
+            return JsonResponse({'success': True, 'books_queued': len(books)})
+        except MatchValidationError as e:
+            return JsonResponse({'error': str(e)}, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON body'}, status=400)
         except Exception as e:
-            logger.error(f"Error in match: {e}")
+            logger.error("Unexpected error in MatchAPI.post: %s", e)
             return JsonResponse({'error': str(e)}, status=500)
 
 
-class SettingsAPI(View):
+class SettingsAPI(JsonLoginRequiredMixin, View):
     """API endpoint for settings"""
     
     def get(self, request):
         try:
-            settings = Setting.objects.first()
+            settings = Setting.load()
             if settings:
                 return JsonResponse({
                     'id': settings.id,
@@ -248,11 +257,13 @@ class SettingsAPI(View):
         except Exception as e:
             logger.error(f"Error fetching settings: {e}")
             return JsonResponse({'error': str(e)}, status=500)
-    
+
     def post(self, request):
+        if not request.user.is_superuser:
+            return JsonResponse({'error': 'Admin access required'}, status=403)
         try:
             data = json.loads(request.body)
-            existing_settings = Setting.objects.first()
+            existing_settings = Setting.load()
             
             if existing_settings:
                 # Update existing
@@ -280,7 +291,7 @@ class SettingsAPI(View):
             return JsonResponse({'error': str(e)}, status=500)
 
 
-class SettingsVerifyAPI(View):
+class SettingsVerifyAPI(JsonLoginRequiredMixin, View):
     """Verify that configured directory paths exist and are writable."""
 
     def get(self, request):
@@ -310,7 +321,7 @@ class SettingsVerifyAPI(View):
             return JsonResponse({'error': str(e)}, status=500)
 
 
-class VersionsAPI(View):
+class VersionsAPI(JsonLoginRequiredMixin, View):
     """API endpoint for version information"""
     
     def get(self, request):
@@ -335,7 +346,7 @@ class VersionsAPI(View):
             return JsonResponse({'error': str(e)}, status=500)
 
 
-class AsinSearchAPI(View):
+class AsinSearchAPI(JsonLoginRequiredMixin, View):
     """API endpoint for ASIN search (used by React Match page)"""
     
     def get(self, request):
