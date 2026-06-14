@@ -12,8 +12,6 @@ const Sidebar: React.FC = () => {
     React.useEffect(() => {
         if (location.pathname.startsWith('/settings')) {
             setExpandedSection('settings');
-        } else if (location.pathname.startsWith('/import') || location.pathname.startsWith('/queue')) {
-            setExpandedSection('imports');
         } else {
             setExpandedSection(null);
         }
@@ -107,54 +105,35 @@ const Sidebar: React.FC = () => {
                     <ul className="nav flex-column">
                         <li className="nav-item">
                             <Link
+                                to="/import"
+                                className={`nav-link ${isActive('/import') ? 'active' : ''}`}
+                                onClick={closeSidebar}
+                            >
+                                <i className="fa-solid fa-file-import"></i>
+                                Import
+                            </Link>
+                        </li>
+
+                        <li className="nav-item">
+                            <Link
                                 to="/"
                                 className={`nav-link ${isActive('/') || location.pathname.startsWith('/books') ? 'active' : ''}`}
                                 onClick={closeSidebar}
                             >
                                 <i className="fa-solid fa-book"></i>
-                                Books
+                                Library
                             </Link>
                         </li>
 
-                        {/* Imports - Expandable */}
                         <li className="nav-item">
-                            <div
-                                className="nav-link d-flex justify-content-between align-items-center"
-                                onClick={() => toggleSection('imports')}
-                                style={{ cursor: 'pointer' }}
+                            <Link
+                                to="/processing"
+                                className={`nav-link ${isActive('/processing') ? 'active' : ''}`}
+                                onClick={closeSidebar}
                             >
-                                <div>
-                                    <i className="fa-solid fa-file-import"></i>
-                                    Imports
-                                </div>
-                                <i className={`fa-solid fa-chevron-right transition-transform ${expandedSection === 'imports' ? 'rotate-90' : ''}`} style={{ fontSize: '0.8em' }}></i>
-                            </div>
-
-                            {/* Nested Import Items */}
-                            {expandedSection === 'imports' && (
-                                <ul className="nav flex-column ms-3">
-                                    <li className="nav-item">
-                                        <Link
-                                            to="/queue"
-                                            className={`nav-link ${isActive('/queue') ? 'active' : ''}`}
-                                            onClick={closeSidebar}
-                                        >
-                                            <i className="fa-solid fa-clock"></i>
-                                            Queue
-                                        </Link>
-                                    </li>
-                                    <li className="nav-item">
-                                        <Link
-                                            to="/import-history"
-                                            className={`nav-link ${isActive('/import-history') ? 'active' : ''}`}
-                                            onClick={closeSidebar}
-                                        >
-                                            <i className="fa-solid fa-history"></i>
-                                            History
-                                        </Link>
-                                    </li>
-                                </ul>
-                            )}
+                                <i className="fa-solid fa-spinner"></i>
+                                Processing
+                            </Link>
                         </li>
 
                         {/* Settings - Expandable */}
@@ -184,6 +163,16 @@ const Sidebar: React.FC = () => {
                                             Configuration
                                         </Link>
                                     </li>
+                                    <li className="nav-item">
+                                        <Link
+                                            to="/settings/security"
+                                            className={`nav-link ${isActive('/settings/security') ? 'active' : ''}`}
+                                            onClick={closeSidebar}
+                                        >
+                                            <i className="fa-solid fa-shield-halved"></i>
+                                            Security
+                                        </Link>
+                                    </li>
                                     {user?.is_superuser && (
                                         <li className="nav-item">
                                             <Link
@@ -192,7 +181,7 @@ const Sidebar: React.FC = () => {
                                                 onClick={closeSidebar}
                                             >
                                                 <i className="fa-solid fa-users"></i>
-                                                User Management
+                                                Users
                                             </Link>
                                         </li>
                                     )}

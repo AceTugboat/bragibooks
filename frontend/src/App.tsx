@@ -1,16 +1,16 @@
 import React from 'react';
-import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import ImportPage from './pages/ImportPage';
 import MatchPage from './pages/MatchPage';
 import BooksPage from './pages/BooksPage';
 import BookDetailPage from './pages/BookDetailPage';
-import QueuePage from './pages/QueuePage';
+import ProcessingPage from './pages/ProcessingPage';
 import ConfigurationPage from './pages/ConfigurationPage';
 import UserManagementPage from './pages/UserManagementPage';
 import AboutPage from './pages/AboutPage';
-import ImportHistoryPage from './pages/ImportHistoryPage';
 import LoginPage from './pages/LoginPage';
 import SetupPage from './pages/SetupPage';
 import { ThemeProvider } from './context/ThemeContext';
@@ -19,12 +19,12 @@ import { AuthProvider } from './context/AuthContext';
 // Layout component with sidebar (for authenticated pages)
 const Layout: React.FC = () => {
   return (
-    <>
+    <ErrorBoundary>
       <Sidebar />
       <div className="main-content">
         <Outlet />
       </div>
-    </>
+    </ErrorBoundary>
   );
 };
 
@@ -62,16 +62,24 @@ const router = createBrowserRouter([
             element: <MatchPage />,
           },
           {
+            path: 'processing',
+            element: <ProcessingPage />,
+          },
+          {
             path: 'queue',
-            element: <QueuePage />,
+            element: <Navigate to="/processing" replace />,
           },
           {
             path: 'import-history',
-            element: <ImportHistoryPage />,
+            element: <Navigate to="/processing" replace />,
           },
           {
             path: 'settings/configuration',
             element: <ConfigurationPage />,
+          },
+          {
+            path: 'settings/security',
+            element: <ProcessingPage />, // placeholder until T-11 wires it
           },
           {
             path: 'settings/users',
