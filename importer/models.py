@@ -96,7 +96,7 @@ class Narrator(models.Model):
 
 class Setting(models.Model):
     api_url = models.CharField(max_length=255)
-    completed_directory = models.CharField(max_length=255)
+    archive_directory = models.CharField(max_length=255, blank=True, default='')
     input_directory = models.CharField(max_length=255)
     num_cpus = models.IntegerField()
     output_directory = models.CharField(max_length=255)
@@ -104,3 +104,12 @@ class Setting(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     objects = SettingManager()
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

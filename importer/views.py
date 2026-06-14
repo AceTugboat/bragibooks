@@ -47,7 +47,7 @@ class ImportView(LoginRequiredMixin, TemplateView):
 
     def post(self, request):
         # Redirect if this is a new session
-        existing_settings = Setting.objects.first()
+        existing_settings = Setting.load()
         if not existing_settings:
             logger.debug("No settings found, returning to settings page")
             messages.error(
@@ -101,7 +101,7 @@ class MatchView(LoginRequiredMixin, TemplateView):
                     messages.error(request, v)
                 return redirect("match")
 
-            if not (existing_settings := Setting.objects.first()):
+            if not (existing_settings := Setting.load()):
                 messages.error(request, "Settings not set")
                 return redirect("setting")
 
@@ -250,10 +250,10 @@ class SettingView(LoginRequiredMixin, TemplateView):
     template_name = "setting.html"
 
     def get_context_data(self, **kwargs):
-        existing_settings = Setting.objects.first()
+        existing_settings = Setting.load()
         default_data = {
             'api_url': 'https://api.audnex.us',
-            'completed_directory': '/input/done',
+            'archive_directory': '',
             'input_directory': '/input',
             'num_cpus': 0,
             'output_directory': '/output',
@@ -263,7 +263,7 @@ class SettingView(LoginRequiredMixin, TemplateView):
             form = SettingForm(instance=existing_settings)
         else:
             form = SettingForm(initial=default_data)
-        all_settings = Setting.objects.first()
+        all_settings = Setting.load()
 
         context = {
             "form": form,
@@ -272,12 +272,11 @@ class SettingView(LoginRequiredMixin, TemplateView):
         return context
 
     def post(self, request):
-        existing_settings = Setting.objects.first()
+        existing_settings = Setting.load()
 
         form = SettingForm(request.POST)
         if form.is_valid():
             paths_to_check = [
-                'completed_directory',
                 'input_directory',
                 'output_directory'
             ]
@@ -293,7 +292,7 @@ class SettingView(LoginRequiredMixin, TemplateView):
             if not existing_settings:
                 setting = Setting.objects.create(
                     api_url=form_data['api_url'],
-                    completed_directory=form_data['completed_directory'],
+                    archive_directory=form_data['archive_directory'],
                     input_directory=form_data['input_directory'],
                     num_cpus=form_data['num_cpus'],
                     output_directory=form_data['output_directory'],
@@ -303,7 +302,7 @@ class SettingView(LoginRequiredMixin, TemplateView):
             else:
                 es = existing_settings
                 es.api_url = form_data['api_url']
-                es.completed_directory = form_data['completed_directory']
+                es.archive_directory = form_data['archive_directory']
                 es.input_directory = form_data['input_directory']
                 es.num_cpus = form_data['num_cpus']
                 es.output_directory = form_data['output_directory']

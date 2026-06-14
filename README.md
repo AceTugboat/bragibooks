@@ -40,7 +40,7 @@ The workflow is a simple 3-step process:
 
 1. **Select input** — browse your audio files and select what you want to process
 2. **Match ASIN** — Bragibooks auto-searches Audible for metadata. If the match is wrong, use the custom search to find the correct title
-3. **Process** — submit for processing and wait. This runs in the background and can take anywhere from seconds to hours depending on file size. Track progress on the Books page
+3. **Process** — submit for processing and wait. This runs in the background and can take anywhere from seconds to hours depending on file size. Track progress on the Processing page
 
 ## Getting Started <a name = "getting_started"></a>
 
@@ -77,7 +77,10 @@ The container entrypoint accepts a mode argument:
   | `-e UID=99` | User ID to run the container as (default 99) |
   | `-e GID=100` | Group ID to run the container as (default 100) |
   | `-e RUN_WORKER=true` | Run the task queue worker inside this container (default false) |
-  | `-e HOSTED_DOMAIN=bragibooks.mydomain.com` | Set for production deployments behind a reverse proxy |
+  | `-e HOSTED_DOMAIN=bragibooks.mydomain.com` | Set for production deployments behind a reverse proxy. Also controls CORS and CSRF allowed origins. |
+  | `-e PASSKEY_RP_ID=bragibooks.mydomain.com` | Relying Party ID for passkey auth (defaults to `HOSTED_DOMAIN`). Must be a registrable domain suffix of your origin. |
+  | `-e PASSKEY_RP_NAME=Bragibooks` | Human-readable name shown during passkey registration (default: `Bragibooks`) |
+  | `-e PASSKEY_ORIGIN=https://bragibooks.mydomain.com` | Exact origin the browser sends during WebAuthn. Must be `https://` in production. |
 
 Single container (web + worker):
 
@@ -90,7 +93,7 @@ Separate containers:
 
 #### Docker Compose
 
-Single container (web + worker), SQLite default:
+Single container (web + worker):
 ```yaml
 services:
   bragi:
@@ -103,10 +106,10 @@ services:
       - UID=1000
       - GID=1000
       - RUN_WORKER=true
-      # DATABASE_URL defaults to SQLite at /config/db.sqlite3 — no extra config needed
-      # To use PostgreSQL: - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
-      # Passkeys (optional): - PASSKEY_RP_ID=bragibooks.mydomain.com
-      #                        PASSKEY_ORIGIN=https://bragibooks.mydomain.com
+      # For PostgreSQL: - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
+      # Passkeys (optional):
+      # - PASSKEY_RP_ID=bragibooks.mydomain.com
+      # - PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
       - path/to/config:/config
       - path/to/input:/downloads
@@ -128,7 +131,10 @@ services:
       - LOG_LEVEL=INFO
       - UID=1000
       - GID=1000
-      - DATABASE_URL=${DATABASE_URL:-sqlite:////config/db.sqlite3}
+      # For PostgreSQL: - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
+      # Passkeys (optional):
+      # - PASSKEY_RP_ID=bragibooks.mydomain.com
+      # - PASSKEY_ORIGIN=https://bragibooks.mydomain.com
     volumes:
       - path/to/config:/config
       - path/to/input:/downloads
@@ -145,19 +151,13 @@ services:
       - LOG_LEVEL=INFO
       - UID=1000
       - GID=1000
-      - DATABASE_URL=${DATABASE_URL:-sqlite:////config/db.sqlite3}
+      # For PostgreSQL: - DATABASE_URL=postgres://user:pass@db:5432/bragibooks
     volumes:
       - path/to/config:/config
       - path/to/input:/downloads
       - path/to/output:/audiobooks
     restart: unless-stopped
 ```
-
-To use an external database, create a `.env` file next to your compose file (never commit this):
-```bash
-DATABASE_URL=postgres://bragibooks:yourpassword@db:5432/bragibooks
-```
-Then add the database as a service — see the [Database](#database) section for examples.
 
 #### Direct install (Gunicorn)
 ```bash
@@ -179,13 +179,27 @@ gunicorn bragibooks_proj.wsgi \
 
 **SQLite is the default — no database setup required.** The database file is created automatically at `/config/db.sqlite3` on first run. This is the same approach used by Sonarr, Radarr, and the rest of the *arr stack and works well for personal and household installs.
 
-To use PostgreSQL, uncomment the `DATABASE_URL` line in your `docker-compose.yaml` environment section and point it at your database:
+To use PostgreSQL, add `DATABASE_URL` to the environment section of your compose file:
 
 ```yaml
 - DATABASE_URL=postgres://bragibooks:password@db:5432/bragibooks
 ```
 
-The PostgreSQL adapter is bundled in the image — no extra steps required. Add a `db` service to your compose file if you need a local Postgres instance (see the [Database](#database) section in the docs folder for a full example).
+The PostgreSQL adapter is bundled in the image — no extra steps required. If you need a local Postgres instance, add a `db` service:
+
+```yaml
+  db:
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_DB=bragibooks
+      - POSTGRES_USER=bragibooks
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
 
 PostgreSQL is recommended for multi-user installs or NAS deployments where you already have a shared Postgres instance running.
 
@@ -218,24 +232,33 @@ If these variables are not set, the passkey button will not appear on the login 
 
 ## Development <a name = "development"></a>
 
-Bragibooks has two parts: a Django backend (port 8000) and a React frontend (Vite dev server on port 5173). In production they run together in a single container — Django serves the pre-built frontend assets. In development you run them separately for hot-reload on both sides.
+Bragibooks has two parts: a Django backend (port 8000) and a React frontend. There are two development modes depending on whether you want to work inside Docker or run everything locally.
 
-### Backend
-```bash
-uv sync
-python manage.py migrate
-python manage.py runserver 0.0.0.0:8000
+### Docker dev mode
 
-# Separate terminal — task queue worker
-python manage.py db_worker
-```
+Runs `manage.py runserver` inside the container with the pre-built frontend assets from `static/dist/`. The task worker runs in the same container (`RUN_WORKER=true` is set by default in the dev profile).
 
-Or via Docker:
 ```bash
 docker compose -f docker/docker-compose.yaml --profile development up --build
 ```
 
-### Frontend
+This mode serves the *built* frontend. After any frontend changes, rebuild with `npm run build` and restart the container.
+
+Passkeys work in Docker dev mode — defaults are `PASSKEY_RP_ID=localhost` and `PASSKEY_ORIGIN=http://localhost:8000` when `HOSTED_DOMAIN` is not set.
+
+### Local dev mode
+
+Runs Django and the Vite dev server separately, giving you hot reload on both backend and frontend.
+
+**Terminal 1 — Django backend:**
+```bash
+uv sync
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
+```
+
+**Terminal 2 — Frontend (Vite dev server):**
+
 Requires Node.js 22.12+ or 20.19+.
 ```bash
 cd frontend
@@ -243,7 +266,14 @@ npm install
 npm run dev   # Vite dev server at http://localhost:5173
 ```
 
-Vite proxies all `/api/*` requests to `http://localhost:8000` — the Django backend must be running. Open **http://localhost:5173** during development, not port 8000.
+Vite proxies all `/api/*` requests to `http://localhost:8000`. Open **http://localhost:5173** in your browser, not port 8000.
+
+For passkeys in local dev mode, set `PASSKEY_ORIGIN=http://localhost:5173` and `PASSKEY_RP_ID=localhost`.
+
+**Terminal 3 — Task queue worker:**
+```bash
+python manage.py db_worker
+```
 
 ### Seed test data
 ```bash

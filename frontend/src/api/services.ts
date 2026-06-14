@@ -90,6 +90,11 @@ export const settingsApi = {
         await apiClient.post('/api/settings/', settings);
     },
 
+    verifyPaths: async (): Promise<Record<string, string>> => {
+        const response = await apiClient.get<Record<string, string>>('/api/settings/verify/');
+        return response.data;
+    },
+
     getVersions: async (): Promise<VersionInfo> => {
         const response = await apiClient.get<VersionInfo>('/api/versions/');
         return response.data;

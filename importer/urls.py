@@ -2,7 +2,7 @@ from django.urls import path, re_path
 
 from .api import (
     AsinSearchAPI, BookDetailAPI, BooksListAPI, DirectoryListAPI,
-    ImportStartAPI, MatchAPI, SettingsAPI, VersionsAPI,
+    ImportStartAPI, MatchAPI, SettingsAPI, SettingsVerifyAPI, VersionsAPI,
 )
 from .auth_api import CheckSetupAPI, CurrentUserAPI, InitialSetupAPI, LoginAPI, LogoutAPI
 from .spa_view import SPAView
@@ -28,6 +28,7 @@ api_patterns = [
 
     # Settings & meta
     path('api/settings/', SettingsAPI.as_view(), name='api-settings'),
+    path('api/settings/verify/', SettingsVerifyAPI.as_view(), name='api-settings-verify'),
     path('api/versions/', VersionsAPI.as_view(), name='api-versions'),
 
     # Users
