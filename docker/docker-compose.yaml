@@ -1,4 +1,5 @@
 services:
+  # Development: Django runserver + frontend built assets + task worker in one container
   bragi-dev:
     image: bragibooks
     build:
@@ -24,6 +25,7 @@ services:
       - 8000:8000
     restart: unless-stopped
 
+  # Production: Gunicorn web server with PostgreSQL — pair with the worker service or set RUN_WORKER=true
   bragi:
     image: acetugboat/bragibooks
     container_name: bragibooks
@@ -36,6 +38,12 @@ services:
       - UID=1001
       - GID=1001
       - RUN_WORKER=false
+      # Set this to your deployment domain to configure CORS and CSRF
+      # - HOSTED_DOMAIN=yourdomain.com
+      # Required for passkey authentication — must match your deployment domain
+      # - PASSKEY_RP_ID=yourdomain.com
+      # - PASSKEY_RP_NAME=Bragibooks
+      # - PASSKEY_ORIGIN=https://yourdomain.com
       - DB_HOST=db
       - DB_PORT=5432
       - DB_USER=${DB_USER:-bragibooks}
@@ -51,6 +59,7 @@ services:
       - db
     restart: unless-stopped
 
+  # Worker: Standalone task queue processor — run alongside the production web container
   worker:
     image: acetugboat/bragibooks
     container_name: bragibooks-worker

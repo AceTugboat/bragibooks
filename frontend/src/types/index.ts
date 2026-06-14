@@ -57,7 +57,7 @@ export interface Status {
 export interface Settings {
     id?: number;
     api_url: string;
-    completed_directory: string;
+    archive_directory: string;
     input_directory: string;
     num_cpus: number;
     output_directory: string;

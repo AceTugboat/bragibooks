@@ -13,6 +13,7 @@ import json
 import requests
 
 from .models import Book, Setting, StatusChoices
+from .services.match import MatchEntry, MatchValidationError, process_match
 from .version import __version__ as bragibooks_version
 from utils.search_tools import ScoreTool, SearchTool
 import django
@@ -219,21 +220,20 @@ class MatchAPI(JsonLoginRequiredMixin, View):
     @method_decorator(ensure_csrf_cookie)
     def post(self, request):
         try:
-            # Import here to avoid circular imports
-            from .views import MatchView
-            
-            # Reuse the existing match view logic
-            match_view = MatchView()
-            match_view.request = request
-            result = match_view.post(request)
-            
-            # If it's a redirect, return success
-            if result.status_code == 302:
-                return JsonResponse({'success': True})
-            else:
-                return result
+            data = json.loads(request.body)
+            entries = [
+                MatchEntry(src_path=k, asin=v)
+                for k, v in data.items()
+                if k and v
+            ]
+            books = process_match(entries)
+            return JsonResponse({'success': True, 'books_queued': len(books)})
+        except MatchValidationError as e:
+            return JsonResponse({'error': str(e)}, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON body'}, status=400)
         except Exception as e:
-            logger.error(f"Error in match: {e}")
+            logger.error("Unexpected error in MatchAPI.post: %s", e)
             return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -242,12 +242,12 @@ class SettingsAPI(JsonLoginRequiredMixin, View):
     
     def get(self, request):
         try:
-            settings = Setting.objects.first()
+            settings = Setting.load()
             if settings:
                 return JsonResponse({
                     'id': settings.id,
                     'api_url': settings.api_url,
-                    'completed_directory': settings.completed_directory,
+                    'archive_directory': settings.archive_directory,
                     'input_directory': settings.input_directory,
                     'num_cpus': settings.num_cpus,
                     'output_directory': settings.output_directory,
@@ -257,17 +257,17 @@ class SettingsAPI(JsonLoginRequiredMixin, View):
         except Exception as e:
             logger.error(f"Error fetching settings: {e}")
             return JsonResponse({'error': str(e)}, status=500)
-    
+
     def post(self, request):
         if not request.user.is_superuser:
             return JsonResponse({'error': 'Admin access required'}, status=403)
         try:
             data = json.loads(request.body)
-            existing_settings = Setting.objects.first()
+            existing_settings = Setting.load()
             
             if existing_settings:
                 # Update existing
-                for field in ['api_url', 'completed_directory', 'input_directory', 
+                for field in ['api_url', 'archive_directory', 'input_directory',
                              'num_cpus', 'output_directory', 'output_scheme']:
                     if field in data:
                         setattr(existing_settings, field, data[field])
@@ -280,7 +280,7 @@ class SettingsAPI(JsonLoginRequiredMixin, View):
             return JsonResponse({
                 'id': settings.id,
                 'api_url': settings.api_url,
-                'completed_directory': settings.completed_directory,
+                'archive_directory': settings.archive_directory,
                 'input_directory': settings.input_directory,
                 'num_cpus': settings.num_cpus,
                 'output_directory': settings.output_directory,
@@ -288,6 +288,36 @@ class SettingsAPI(JsonLoginRequiredMixin, View):
             })
         except Exception as e:
             logger.error(f"Error updating settings: {e}")
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+class SettingsVerifyAPI(JsonLoginRequiredMixin, View):
+    """Verify that configured directory paths exist and are writable."""
+
+    def get(self, request):
+        import os
+        try:
+            settings_obj = Setting.objects.first()
+            if not settings_obj:
+                return JsonResponse({'error': 'Settings not configured'}, status=400)
+
+            def check_path(path_str):
+                if not path_str:
+                    return 'not_configured'
+                p = Path(path_str)
+                if not p.is_dir():
+                    return 'missing'
+                if not os.access(p, os.W_OK):
+                    return 'not_writable'
+                return 'ok'
+
+            return JsonResponse({
+                'input_directory': check_path(settings_obj.input_directory),
+                'output_directory': check_path(settings_obj.output_directory),
+                'archive_directory': check_path(settings_obj.archive_directory),
+            })
+        except Exception as e:
+            logger.error(f"Error verifying paths: {e}")
             return JsonResponse({'error': str(e)}, status=500)
 
 
