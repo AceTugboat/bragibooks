@@ -189,3 +189,8 @@ TASKS = {
         "QUEUES": ["default"],
     }
 }
+
+# Passkey / WebAuthn
+PASSKEY_RP_ID = os.getenv('PASSKEY_RP_ID', 'localhost')
+PASSKEY_RP_NAME = os.getenv('PASSKEY_RP_NAME', 'Bragi Books')
+PASSKEY_ORIGIN = os.getenv('PASSKEY_ORIGIN', 'http://localhost:5173')
