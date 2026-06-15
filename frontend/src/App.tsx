@@ -4,7 +4,6 @@ import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import ImportPage from './pages/ImportPage';
-import MatchPage from './pages/MatchPage';
 import BooksPage from './pages/BooksPage';
 import BookDetailPage from './pages/BookDetailPage';
 import ProcessingPage from './pages/ProcessingPage';
@@ -60,10 +59,6 @@ const router = createBrowserRouter([
           {
             path: 'import',
             element: <ImportPage />,
-          },
-          {
-            path: 'match',
-            element: <MatchPage />,
           },
           {
             path: 'processing',
