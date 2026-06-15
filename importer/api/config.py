@@ -28,6 +28,12 @@ class SettingsAPI(JsonLoginRequiredMixin, View):
                     'num_cpus': s.num_cpus,
                     'output_directory': s.output_directory,
                     'output_scheme': s.output_scheme,
+                    'skip_conversion': s.skip_conversion,
+                    'audio_bitrate': s.audio_bitrate,
+                    'audio_samplerate': s.audio_samplerate,
+                    'chapter_source': s.chapter_source,
+                    'ignore_source_tags': s.ignore_source_tags,
+                    'chapter_name_format': s.chapter_name_format,
                 })
             return JsonResponse(None, safe=False)
         except Exception as e:
@@ -42,7 +48,9 @@ class SettingsAPI(JsonLoginRequiredMixin, View):
             s = Setting.load()
             if s:
                 for field in ['api_url', 'archive_directory', 'input_directory',
-                              'num_cpus', 'output_directory', 'output_scheme']:
+                              'num_cpus', 'output_directory', 'output_scheme',
+                              'skip_conversion', 'audio_bitrate', 'audio_samplerate',
+                              'chapter_source', 'ignore_source_tags', 'chapter_name_format']:
                     if field in data:
                         setattr(s, field, data[field])
                 s.save()
@@ -56,6 +64,12 @@ class SettingsAPI(JsonLoginRequiredMixin, View):
                 'num_cpus': s.num_cpus,
                 'output_directory': s.output_directory,
                 'output_scheme': s.output_scheme,
+                'skip_conversion': s.skip_conversion,
+                'audio_bitrate': s.audio_bitrate,
+                'audio_samplerate': s.audio_samplerate,
+                'chapter_source': s.chapter_source,
+                'ignore_source_tags': s.ignore_source_tags,
+                'chapter_name_format': s.chapter_name_format,
             })
         except Exception as e:
             logger.error("Error updating settings: %s", e)

@@ -101,6 +101,16 @@ class Setting(models.Model):
     num_cpus = models.IntegerField()
     output_directory = models.CharField(max_length=255)
     output_scheme = models.CharField(max_length=255)
+    skip_conversion = models.BooleanField(default=False)
+    audio_bitrate = models.IntegerField(null=True, blank=True)
+    audio_samplerate = models.IntegerField(null=True, blank=True)
+    chapter_source = models.CharField(
+        max_length=20,
+        choices=[('audible', 'Audible'), ('source_file', 'Source File')],
+        default='audible',
+    )
+    ignore_source_tags = models.BooleanField(default=False)
+    chapter_name_format = models.CharField(max_length=255, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     objects = SettingManager()
