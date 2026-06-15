@@ -62,6 +62,12 @@ export interface Settings {
     num_cpus: number;
     output_directory: string;
     output_scheme: string;
+    skip_conversion?: boolean;
+    audio_bitrate?: number | null;
+    audio_samplerate?: number | null;
+    chapter_source?: 'audible' | 'source_file';
+    ignore_source_tags?: boolean;
+    chapter_name_format?: string;
 }
 
 // File explorer types
