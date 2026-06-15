@@ -15,6 +15,69 @@ from importer.models import (Author, Book, Narrator, Setting, Status,
 logger = logging.getLogger(__name__)
 
 
+class BragiM4bMerge(m4b_helper.M4bMerge):
+    """M4bMerge subclass that applies Bragi's Setting overrides."""
+
+    def __init__(self, input_data, metadata, original_path, chapters=None, setting=None):
+        super().__init__(input_data, metadata, original_path, chapters)
+        self._setting = setting
+
+    def prepare_command_args(self):
+        super().prepare_command_args()
+        if not self._setting:
+            return
+        # ignore_source_tags defaults False in Setting; remove parent's flag unless True
+        if not self._setting.ignore_source_tags:
+            try:
+                self.processing_args.remove('--ignore-source-tags')
+            except ValueError:
+                pass
+        # skip_conversion forces --no-conversion for all input types
+        if self._setting.skip_conversion and '--no-conversion' not in self.processing_args:
+            self.processing_args.append('--no-conversion')
+
+    def find_bitrate(self, file_input):
+        if self._setting and self._setting.audio_bitrate:
+            return self._setting.audio_bitrate * 1000
+        return super().find_bitrate(file_input)
+
+    def find_samplerate(self, file_input):
+        if self._setting and self._setting.audio_samplerate:
+            return self._setting.audio_samplerate
+        return super().find_samplerate(file_input)
+
+    def fix_chapters(self):
+        if self._setting and self._setting.chapter_source == 'source_file':
+            saved_chapters = self.chapters
+            self.chapters = None
+            super().fix_chapters()
+            self.chapters = saved_chapters
+            if self._setting.chapter_name_format:
+                self._reformat_chapter_names(self._setting.chapter_name_format)
+        else:
+            super().fix_chapters()
+
+    def _reformat_chapter_names(self, fmt: str):
+        chapter_file = f"{self.book_output}.chapters.txt"
+        try:
+            with open(chapter_file) as f:
+                lines = f.readlines()
+            new_lines = []
+            counter = 0
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith('#') or not stripped:
+                    new_lines.append(line)
+                    continue
+                counter += 1
+                timestamp = stripped[:13]
+                new_lines.append(f"{timestamp}{fmt.format(num=counter)}\n")
+            with open(chapter_file, 'w') as f:
+                f.writelines(new_lines)
+        except (OSError, KeyError):
+            logger.warning("Could not reformat chapter names: %s", chapter_file)
+
+
 def set_configs():
     existing_settings = Setting.load()
     if existing_settings:
@@ -43,6 +106,7 @@ def run_m4b_merge(asin: str):
     logger.debug(f'Using output format: {config.path_format}')
 
     book = Book.objects.get(asin=asin)
+    setting = Setting.load()
     logger.info(
         f"{'-' * 15} Starting to process {asin}: {book.title} {'-' * 15}")
 
@@ -57,12 +121,17 @@ def run_m4b_merge(asin: str):
 
     audible = audible_helper.BookData(asin)
 
+    chapters = audible.get_chapters()
+    if setting and setting.chapter_source == 'source_file':
+        chapters = None
+
     # Process metadata and run components to merge files
-    m4b = m4b_helper.M4bMerge(
+    m4b = BragiM4bMerge(
         input_data,
         audible.fetch_api_data(config.api_url),
         Path(book.src_path),
-        audible.get_chapters()
+        chapters,
+        setting=setting,
     )
 
     try:
