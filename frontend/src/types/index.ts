@@ -95,7 +95,7 @@ export interface AsinSearchResult {
     publisher: string;
     release_date: string;
     runtime_length_min: number;
-    image_link: string[];
+    image_link?: string[];
     score: number;
 }
 

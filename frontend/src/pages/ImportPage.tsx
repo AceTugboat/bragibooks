@@ -67,8 +67,8 @@ const ImportPage: React.FC = () => {
                         searching: false,
                         options: results,
                         selectedAsin: results.length > 0 ? results[0].asin : '',
-                        imageUrl: results.length > 0 && results[0].image_link?.length > 0
-                            ? results[0].image_link[0]
+                        imageUrl: results.length > 0
+                            ? (results[0].image_link?.[0] ?? FALLBACK_IMAGE)
                             : FALLBACK_IMAGE,
                     };
                     return updated;
@@ -219,9 +219,9 @@ const ImportPage: React.FC = () => {
                                             <div>
                                                 <label className="form-label fw-semibold">Select a match</label>
                                                 {card.options.map(opt => (
-                                                    <div key={opt.asin} className="form-check mb-1">
+                                                    <div key={opt.asin} className="mb-2 d-flex align-items-center gap-2">
                                                         <input
-                                                            className="form-check-input"
+                                                            className="form-check-input flex-shrink-0"
                                                             type="radio"
                                                             name={`asin-${index}`}
                                                             id={`asin-${index}-${opt.asin}`}
@@ -229,13 +229,19 @@ const ImportPage: React.FC = () => {
                                                             checked={card.selectedAsin === opt.asin}
                                                             onChange={() => handleAsinSelect(index, opt.asin)}
                                                         />
+                                                        <img
+                                                            src={opt.image_link?.[0] ?? FALLBACK_IMAGE}
+                                                            alt=""
+                                                            style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}
+                                                            onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }}
+                                                        />
                                                         <label
-                                                            className="form-check-label text-truncate d-block"
+                                                            className="form-check-label text-truncate"
                                                             htmlFor={`asin-${index}-${opt.asin}`}
                                                             title={`${opt.title} — ${opt.authors}`}
                                                         >
-                                                            {opt.title} — {opt.authors}
-                                                            <span className="text-muted ms-1">({opt.asin})</span>
+                                                            <div className="fw-semibold">{opt.title}</div>
+                                                            <div className="text-muted small">{opt.authors} <span className="ms-1">({opt.asin})</span></div>
                                                         </label>
                                                     </div>
                                                 ))}
