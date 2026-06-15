@@ -1,6 +1,11 @@
 from django.urls import path, re_path
 
-from .api.auth import CheckSetupAPI, CurrentUserAPI, InitialSetupAPI, LoginAPI, LogoutAPI
+from .api.auth import (
+    CheckSetupAPI, CurrentUserAPI, InitialSetupAPI, LoginAPI, LogoutAPI,
+    PasskeyDeleteAPI, PasskeyListAPI,
+    PasskeyLoginBeginAPI, PasskeyLoginCompleteAPI,
+    PasskeyRegisterBeginAPI, PasskeyRegisterCompleteAPI,
+)
 from .api.books import BookDetailAPI, BookReprocessAPI, BooksListAPI
 from .api.config import SettingsAPI, SettingsVerifyAPI, VersionsAPI
 from .api.import_pipeline import AsinSearchAPI, DirectoryListAPI, ImportStartAPI, MatchAPI
@@ -14,6 +19,14 @@ api_patterns = [
     path('api/auth/user', CurrentUserAPI.as_view(), name='api-current-user'),
     path('api/auth/check-setup', CheckSetupAPI.as_view(), name='api-check-setup'),
     path('api/auth/setup', InitialSetupAPI.as_view(), name='api-setup'),
+
+    # Passkeys
+    path('api/auth/passkey/register/begin/', PasskeyRegisterBeginAPI.as_view(), name='api-passkey-register-begin'),
+    path('api/auth/passkey/register/complete/', PasskeyRegisterCompleteAPI.as_view(), name='api-passkey-register-complete'),
+    path('api/auth/passkey/login/begin/', PasskeyLoginBeginAPI.as_view(), name='api-passkey-login-begin'),
+    path('api/auth/passkey/login/complete/', PasskeyLoginCompleteAPI.as_view(), name='api-passkey-login-complete'),
+    path('api/auth/passkeys/', PasskeyListAPI.as_view(), name='api-passkeys-list'),
+    path('api/auth/passkeys/<int:pk>/', PasskeyDeleteAPI.as_view(), name='api-passkey-delete'),
 
     # Books
     path('api/books/', BooksListAPI.as_view(), name='api-books'),
