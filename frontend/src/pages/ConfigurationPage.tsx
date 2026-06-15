@@ -360,31 +360,33 @@ const SettingsPage: React.FC = () => {
 
                         <div className="row mb-3">
                             <div className="col-md-6">
-                                <label className="form-label">Audio Bitrate (kbps)</label>
+                                <label className="form-label" htmlFor="audioBitrate">Audio Bitrate (kbps)</label>
                                 <input
                                     type="number"
+                                    id="audioBitrate"
                                     className="form-control"
                                     placeholder="Auto-detect"
                                     value={settings.audio_bitrate ?? ''}
                                     min={0}
                                     onChange={e => handleChange(
                                         'audio_bitrate',
-                                        e.target.value === '' ? null : parseInt(e.target.value)
+                                        e.target.value === '' ? null : parseInt(e.target.value, 10)
                                     )}
                                 />
                                 <div className="form-text">Leave blank to auto-detect from source file</div>
                             </div>
                             <div className="col-md-6">
-                                <label className="form-label">Audio Sample Rate (Hz)</label>
+                                <label className="form-label" htmlFor="audioSamplerate">Audio Sample Rate (Hz)</label>
                                 <input
                                     type="number"
+                                    id="audioSamplerate"
                                     className="form-control"
                                     placeholder="Auto-detect"
                                     value={settings.audio_samplerate ?? ''}
                                     min={0}
                                     onChange={e => handleChange(
                                         'audio_samplerate',
-                                        e.target.value === '' ? null : parseInt(e.target.value)
+                                        e.target.value === '' ? null : parseInt(e.target.value, 10)
                                     )}
                                 />
                                 <div className="form-text">Leave blank to auto-detect (e.g. 44100, 48000)</div>
@@ -438,9 +440,10 @@ const SettingsPage: React.FC = () => {
                         </div>
 
                         <div className="mb-3">
-                            <label className="form-label">Chapter Name Format</label>
+                            <label className="form-label" htmlFor="chapterNameFormat">Chapter Name Format</label>
                             <input
                                 type="text"
+                                id="chapterNameFormat"
                                 className="form-control"
                                 placeholder="Chapter {num:02d}"
                                 value={settings.chapter_name_format ?? ''}
