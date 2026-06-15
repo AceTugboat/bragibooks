@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getErrorMessage } from '../api/services';
+import { passkeyApi, getErrorMessage } from '../api/services';
+import { startAuthentication } from '../utils/webauthn';
 
 const LoginPage: React.FC = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, checkAuth } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [passkeyLoading, setPasskeyLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -23,6 +25,22 @@ const LoginPage: React.FC = () => {
             setError(getErrorMessage(err));
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handlePasskeyLogin = async () => {
+        setError(null);
+        setPasskeyLoading(true);
+        try {
+            const options = await passkeyApi.loginBegin();
+            const assertion = await startAuthentication(options);
+            await passkeyApi.loginComplete(assertion);
+            await checkAuth();
+            navigate('/');
+        } catch (err) {
+            setError(getErrorMessage(err));
+        } finally {
+            setPasskeyLoading(false);
         }
     };
 
@@ -91,6 +109,29 @@ const LoginPage: React.FC = () => {
                             )}
                         </button>
                     </form>
+
+                    {window.PublicKeyCredential && (
+                        <div className="mt-3">
+                            <div className="d-flex align-items-center gap-2 mb-3">
+                                <hr className="flex-grow-1" />
+                                <small className="text-muted">or</small>
+                                <hr className="flex-grow-1" />
+                            </div>
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary w-100"
+                                onClick={handlePasskeyLogin}
+                                disabled={passkeyLoading || loading}
+                            >
+                                {passkeyLoading ? (
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                                ) : (
+                                    <i className="fa-solid fa-key me-2" />
+                                )}
+                                Sign in with a passkey
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

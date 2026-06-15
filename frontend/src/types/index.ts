@@ -111,3 +111,10 @@ export interface VersionInfo {
     django_version: string;
     m4b_merge_version: string;
 }
+
+export interface PasskeyCredential {
+    id: number;
+    name: string;
+    created_at: string;
+    last_used_at: string | null;
+}

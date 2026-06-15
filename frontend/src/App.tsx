@@ -12,6 +12,7 @@ import UserManagementPage from './pages/UserManagementPage';
 import AboutPage from './pages/AboutPage';
 import LoginPage from './pages/LoginPage';
 import SetupPage from './pages/SetupPage';
+import SecurityPage from './pages/SecurityPage';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { useData } from './context/DataContext';
@@ -78,7 +79,7 @@ const router = createBrowserRouter([
           },
           {
             path: 'settings/security',
-            element: <ProcessingPage />, // placeholder until T-11 wires it
+            element: <SecurityPage />,
           },
           {
             path: 'settings/users',

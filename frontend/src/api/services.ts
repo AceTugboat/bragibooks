@@ -5,6 +5,7 @@ import type {
     DirectoryContents,
     AsinSearchResult,
     VersionInfo,
+    PasskeyCredential,
 } from '../types';
 
 export interface User {
@@ -141,6 +142,37 @@ export const authApi = {
             email,
         });
         return response.data;
+    },
+};
+
+// Passkey (WebAuthn) operations
+export const passkeyApi = {
+    list: async (): Promise<PasskeyCredential[]> => {
+        const response = await apiClient.get<PasskeyCredential[]>('/api/auth/passkeys/');
+        return response.data;
+    },
+
+    registerBegin: async (): Promise<any> => {
+        const response = await apiClient.get('/api/auth/passkey/register/begin/');
+        return response.data;
+    },
+
+    registerComplete: async (credential: any): Promise<void> => {
+        await apiClient.post('/api/auth/passkey/register/complete/', credential);
+    },
+
+    loginBegin: async (): Promise<any> => {
+        const response = await apiClient.get('/api/auth/passkey/login/begin/');
+        return response.data;
+    },
+
+    loginComplete: async (assertion: any): Promise<User> => {
+        const response = await apiClient.post<User>('/api/auth/passkey/login/complete/', assertion);
+        return response.data;
+    },
+
+    delete: async (id: number): Promise<void> => {
+        await apiClient.delete(`/api/auth/passkeys/${id}/`);
     },
 };
 
