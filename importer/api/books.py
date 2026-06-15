@@ -84,3 +84,14 @@ class BookDetailAPI(JsonLoginRequiredMixin, View):
         except Exception as e:
             logger.error("Error fetching book %s: %s", pk, e)
             return JsonResponse({'error': str(e)}, status=500)
+
+    def delete(self, request, pk):
+        try:
+            book = Book.objects.get(pk=pk)
+            book.delete()
+            return JsonResponse({}, status=204)
+        except Book.DoesNotExist:
+            return JsonResponse({'error': 'Book not found'}, status=404)
+        except Exception as e:
+            logger.error("Error deleting book %s: %s", pk, e)
+            return JsonResponse({'error': str(e)}, status=500)
