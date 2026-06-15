@@ -66,6 +66,10 @@ export const bookApi = {
     delete: async (id: string | number): Promise<void> => {
         await apiClient.delete(`/api/books/${id}/`);
     },
+
+    reprocess: async (id: string | number, asin?: string): Promise<void> => {
+        await apiClient.post(`/api/books/${id}/reprocess/`, asin ? { asin } : {});
+    },
 };
 
 // ASIN Search

@@ -1,11 +1,29 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { useData } from '../context/DataContext';
+import { bookApi, getErrorMessage } from '../api/services';
 
 const ProcessingPage: React.FC = () => {
     const { books, refreshBooks } = useData();
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [reprocessingId, setReprocessingId] = useState<number | null>(null);
+    const [reprocessAsin, setReprocessAsin] = useState('');
+    const [reprocessError, setReprocessError] = useState<string | null>(null);
+
+    const handleReprocess = async (bookId: number, asin?: string) => {
+        try {
+            setReprocessingId(bookId);
+            setReprocessError(null);
+            await bookApi.reprocess(bookId, asin || undefined);
+            await refreshBooks();
+        } catch (err) {
+            setReprocessError(getErrorMessage(err));
+        } finally {
+            setReprocessingId(null);
+            setReprocessAsin('');
+        }
+    };
 
     useEffect(() => {
         if (books.processing.length > 0) {
@@ -59,8 +77,8 @@ const ProcessingPage: React.FC = () => {
                     <div className="list-group">
                         {books.error.map(book => (
                             <div key={book.id} className="list-group-item">
-                                <div className="d-flex justify-content-between align-items-start">
-                                    <div>
+                                <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                    <div className="flex-grow-1">
                                         <strong>{book.title}</strong>
                                         {book.authors[0] && (
                                             <span className="text-muted ms-2">
@@ -68,16 +86,31 @@ const ProcessingPage: React.FC = () => {
                                             </span>
                                         )}
                                         {book.status.message && (
-                                            <p className="text-danger small mb-0 mt-1">{book.status.message}</p>
+                                            <p className="text-danger small mb-1 mt-1">{book.status.message}</p>
                                         )}
-                                    </div>
-                                    <div className="d-flex gap-2 ms-3 flex-shrink-0">
-                                        <button className="btn btn-sm btn-outline-primary" disabled>
-                                            Re-process
-                                        </button>
-                                        <button className="btn btn-sm btn-outline-danger" disabled>
-                                            Delete
-                                        </button>
+                                        {reprocessError && reprocessingId === book.id && (
+                                            <p className="text-danger small mb-0">{reprocessError}</p>
+                                        )}
+                                        <div className="d-flex gap-2 mt-2 align-items-center flex-wrap">
+                                            <input
+                                                type="text"
+                                                className="form-control form-control-sm"
+                                                style={{ maxWidth: 160 }}
+                                                placeholder="New ASIN (optional)"
+                                                value={reprocessingId === book.id ? reprocessAsin : ''}
+                                                onChange={e => setReprocessAsin(e.target.value)}
+                                                onFocus={() => setReprocessingId(book.id)}
+                                            />
+                                            <button
+                                                className="btn btn-sm btn-outline-primary"
+                                                disabled={reprocessingId === book.id && reprocessAsin === '' && false}
+                                                onClick={() => handleReprocess(book.id, reprocessAsin || undefined)}
+                                            >
+                                                {reprocessingId === book.id ? (
+                                                    <span className="spinner-border spinner-border-sm" role="status" />
+                                                ) : 'Re-process'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

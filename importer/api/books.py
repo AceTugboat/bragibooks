@@ -1,8 +1,10 @@
+import json
 import logging
 from django.http import JsonResponse
 from django.views import View
 
 from ..models import Book, StatusChoices
+from ..tasks import m4b_merge_task
 from .mixins import JsonLoginRequiredMixin
 
 logger = logging.getLogger(__name__)
@@ -95,3 +97,36 @@ class BookDetailAPI(JsonLoginRequiredMixin, View):
         except Exception as e:
             logger.error("Error deleting book %s: %s", pk, e)
             return JsonResponse({'error': str(e)}, status=500)
+
+
+class BookReprocessAPI(JsonLoginRequiredMixin, View):
+    def post(self, request, pk):
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON body'}, status=400)
+
+        try:
+            book = Book.objects.select_related('status').get(pk=pk)
+        except Book.DoesNotExist:
+            return JsonResponse({'error': 'Book not found'}, status=404)
+
+        new_asin = data.get('asin', '').strip()
+        if new_asin:
+            errors = Book.objects.book_asin_validator(new_asin)
+            if errors:
+                return JsonResponse({'error': next(iter(errors.values()))}, status=400)
+            book.asin = new_asin
+            book.save(update_fields=['asin'])
+
+        book.status.status = StatusChoices.PROCESSING
+        book.status.message = ''
+        book.status.save()
+
+        try:
+            m4b_merge_task.enqueue(book.asin)
+        except Exception as e:
+            logger.error("Failed to enqueue reprocess for book %s: %s", pk, e)
+            return JsonResponse({'error': 'Failed to enqueue task'}, status=500)
+
+        return JsonResponse({'success': True, 'asin': book.asin})

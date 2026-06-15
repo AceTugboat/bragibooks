@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import type { Book } from '../types';
+import { StatusChoice } from '../types';
 import { bookApi, getErrorMessage } from '../api/services';
 import { useData } from '../context/DataContext';
 
@@ -14,6 +15,9 @@ const BookDetailPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [showReprocessModal, setShowReprocessModal] = useState(false);
+    const [reprocessAsin, setReprocessAsin] = useState('');
+    const [reprocessing, setReprocessing] = useState(false);
     const { refreshBooks } = useData();
 
     useEffect(() => {
@@ -53,8 +57,22 @@ const BookDetailPage: React.FC = () => {
         }
     };
 
+    const handleReprocess = async () => {
+        try {
+            setReprocessing(true);
+            await bookApi.reprocess(id!, reprocessAsin || undefined);
+            await refreshBooks();
+            setShowReprocessModal(false);
+            setReprocessAsin('');
+            if (id) loadBook(id);
+        } catch (err) {
+            setError(getErrorMessage(err));
+        } finally {
+            setReprocessing(false);
+        }
+    };
+
     const handleFixMetadata = () => {
-        // TODO: Implement fix metadata functionality
         console.log('Fix metadata for book:', id);
     };
 
@@ -112,6 +130,16 @@ const BookDetailPage: React.FC = () => {
                 }
             >
                 <div className="d-flex gap-2">
+                    {book.status.status === StatusChoice.DONE && (
+                        <button
+                            className="btn btn-outline-warning btn-sm"
+                            onClick={() => setShowReprocessModal(true)}
+                            title="Re-process"
+                        >
+                            <i className="fa-solid fa-rotate me-1"></i>
+                            Re-process
+                        </button>
+                    )}
                     <button
                         className="btn btn-outline-danger btn-sm"
                         onClick={() => setShowDeleteModal(true)}
@@ -320,6 +348,60 @@ const BookDetailPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+        )}
+
+        {showReprocessModal && (
+            <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                <div className="modal-dialog">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title">Re-process Book</h5>
+                            <button
+                                type="button"
+                                className="btn-close"
+                                onClick={() => setShowReprocessModal(false)}
+                                disabled={reprocessing}
+                            />
+                        </div>
+                        <div className="modal-body">
+                            <p>Re-processing will overwrite the existing output file for <strong>{book.title}</strong>.</p>
+                            <div className="mb-3">
+                                <label className="form-label small text-muted">New ASIN (leave blank to retry with same ASIN)</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder={book.asin}
+                                    value={reprocessAsin}
+                                    onChange={e => setReprocessAsin(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => setShowReprocessModal(false)}
+                                disabled={reprocessing}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-warning"
+                                onClick={handleReprocess}
+                                disabled={reprocessing}
+                            >
+                                {reprocessing ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" />
+                                        Re-processing...
+                                    </>
+                                ) : 'Re-process'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         )}
         </>
     );
