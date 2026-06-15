@@ -98,11 +98,16 @@ class MatchAPI(JsonLoginRequiredMixin, View):
             root_path = Path(input_dir).resolve()
 
             data = json.loads(request.body)
-            entries = [
-                MatchEntry(src_path=str(root_path / k), asin=v)
-                for k, v in data.items()
-                if k and v
-            ]
+            entries = []
+            for k, v in data.items():
+                if not (k and v):
+                    continue
+                target = (root_path / k).resolve()
+                try:
+                    target.relative_to(root_path)
+                except ValueError:
+                    return JsonResponse({'error': 'Path outside input directory'}, status=400)
+                entries.append(MatchEntry(src_path=str(target), asin=v))
             books = process_match(entries)
             return JsonResponse({'success': True, 'books_queued': len(books)})
         except MatchValidationError as e:

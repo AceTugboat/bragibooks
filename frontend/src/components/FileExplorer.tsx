@@ -38,7 +38,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             }
             return next;
         });
-        if (!expandedPaths.has(path) && !childrenByPath[path]) {
+        if (!expandedPaths.has(path) && !childrenByPath[path] && !loadingPaths.has(path)) {
             setLoadingPaths(prev => new Set(prev).add(path));
             try {
                 const children = await fetchChildren(path);
