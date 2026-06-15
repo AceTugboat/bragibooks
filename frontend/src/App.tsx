@@ -15,15 +15,19 @@ import LoginPage from './pages/LoginPage';
 import SetupPage from './pages/SetupPage';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
+import { useData } from './context/DataContext';
+import ToastContainer from './components/ToastContainer';
 
 // Layout component with sidebar (for authenticated pages)
 const Layout: React.FC = () => {
+  const { toasts, dismissToast } = useData();
   return (
     <ErrorBoundary>
       <Sidebar />
       <div className="main-content">
         <Outlet />
       </div>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </ErrorBoundary>
   );
 };

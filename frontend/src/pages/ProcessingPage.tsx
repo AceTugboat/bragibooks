@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { useData } from '../context/DataContext';
@@ -6,7 +6,6 @@ import { bookApi, getErrorMessage } from '../api/services';
 
 const ProcessingPage: React.FC = () => {
     const { books, refreshBooks } = useData();
-    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const [reprocessingId, setReprocessingId] = useState<number | null>(null);
     const [reprocessAsin, setReprocessAsin] = useState('');
     const [reprocessError, setReprocessError] = useState<string | null>(null);
@@ -24,15 +23,6 @@ const ProcessingPage: React.FC = () => {
             setReprocessAsin('');
         }
     };
-
-    useEffect(() => {
-        if (books.processing.length > 0) {
-            intervalRef.current = setInterval(refreshBooks, 10_000);
-        }
-        return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-        };
-    }, [books.processing.length, refreshBooks]);
 
     const recentlyCompleted = [...books.done]
         .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
