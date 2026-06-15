@@ -75,6 +75,7 @@ export interface FileItem {
     path: string;
     name: string;
     is_directory: boolean;
+    has_children: boolean;
     children?: FileItem[];
     created_at: number;  // Unix timestamp
     modified_at: number; // Unix timestamp

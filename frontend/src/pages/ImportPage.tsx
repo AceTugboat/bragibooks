@@ -37,6 +37,11 @@ const ImportPage: React.FC = () => {
             .finally(() => setLoadingFiles(false));
     }, []);
 
+    const fetchChildren = useCallback(async (path: string): Promise<FileItem[]> => {
+        const data = await directoryApi.getContents(path);
+        return data.contents;
+    }, []);
+
     const handleNext = useCallback(async () => {
         if (selectedPaths.length === 0) {
             setError('Select at least one directory to import');
@@ -155,9 +160,10 @@ const ImportPage: React.FC = () => {
                                 </div>
                             ) : (
                                 <FileExplorer
-                                    contents={contents}
+                                    rootItems={contents}
                                     selectedPaths={selectedPaths}
                                     onSelectionChange={setSelectedPaths}
+                                    fetchChildren={fetchChildren}
                                 />
                             )}
                             <div className="p-3">

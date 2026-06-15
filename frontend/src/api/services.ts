@@ -32,8 +32,9 @@ export const getErrorMessage = (error: any): string => {
 
 // Directory/File operations
 export const directoryApi = {
-    getContents: async (): Promise<DirectoryContents> => {
-        const response = await apiClient.get<DirectoryContents>('/api/import/files/');
+    getContents: async (path?: string): Promise<DirectoryContents> => {
+        const params = path ? { path } : {};
+        const response = await apiClient.get<DirectoryContents>('/api/import/files/', { params });
         return response.data;
     },
 
