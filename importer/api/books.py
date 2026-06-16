@@ -184,3 +184,66 @@ class BookMetadataAPI(JsonLoginRequiredMixin, View):
 
         book.save()
         return JsonResponse(serialize_book(book))
+
+
+class BookChaptersAPI(JsonLoginRequiredMixin, View):
+    def _chapter_file(self, book: Book) -> Path:
+        dest = Path(book.dest_path)
+        return dest.parent / (dest.stem + '.chapters.txt')
+
+    def get(self, request, pk):
+        try:
+            book = Book.objects.get(pk=pk)
+        except Book.DoesNotExist:
+            return JsonResponse({'error': 'Book not found'}, status=404)
+
+        chapter_file = self._chapter_file(book)
+        if not chapter_file.exists():
+            return JsonResponse({'error': 'Chapter file not found'}, status=404)
+
+        chapters = []
+        idx = 0
+        with open(chapter_file) as f:
+            for line in f:
+                stripped = line.strip()
+                if not stripped or stripped.startswith('#'):
+                    continue
+                parts = stripped.split(' ', 1)
+                if len(parts) == 2:
+                    idx += 1
+                    chapters.append({'index': idx, 'timestamp': parts[0], 'name': parts[1]})
+        return JsonResponse(chapters, safe=False)
+
+    def put(self, request, pk):
+        try:
+            book = Book.objects.get(pk=pk)
+        except Book.DoesNotExist:
+            return JsonResponse({'error': 'Book not found'}, status=404)
+
+        if not book.dest_path or not Path(book.dest_path).exists():
+            return JsonResponse({'error': 'Output file not found on disk'}, status=400)
+
+        mp4chaps = shutil.which('mp4chaps')
+        if not mp4chaps:
+            return JsonResponse({'error': 'mp4chaps not available'}, status=503)
+
+        try:
+            chapters = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON body'}, status=400)
+
+        chapter_file = self._chapter_file(book)
+        with open(chapter_file, 'w') as f:
+            for ch in chapters:
+                f.write(f"{ch['timestamp']} {ch['name']}\n")
+
+        try:
+            result = subprocess.run([mp4chaps, '-i', book.dest_path], capture_output=True, timeout=60)
+            if result.returncode != 0:
+                return JsonResponse({'error': result.stderr.decode(errors='replace')}, status=500)
+        except subprocess.TimeoutExpired:
+            return JsonResponse({'error': 'mp4chaps timed out'}, status=500)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+        return JsonResponse({'ok': True})

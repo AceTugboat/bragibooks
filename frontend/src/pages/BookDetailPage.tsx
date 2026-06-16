@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
-import type { Author, Book, Narrator } from '../types';
+import type { Author, Book, Chapter, Narrator } from '../types';
 import { StatusChoice } from '../types';
 import { bookApi, getErrorMessage } from '../api/services';
 import { useData } from '../context/DataContext';
@@ -21,6 +21,11 @@ const BookDetailPage: React.FC = () => {
     const [showMetaModal, setShowMetaModal] = useState(false);
     const [metaForm, setMetaForm] = useState({ title: '', author: '', narrator: '', year: '', description: '', genre: '' });
     const [savingMeta, setSavingMeta] = useState(false);
+    const [chapters, setChapters] = useState<Chapter[]>([]);
+    const [chaptersOpen, setChaptersOpen] = useState(false);
+    const [loadingChapters, setLoadingChapters] = useState(false);
+    const [savingChapters, setSavingChapters] = useState(false);
+    const [chapterError, setChapterError] = useState<string | null>(null);
     const { refreshBooks } = useData();
 
     useEffect(() => {
@@ -85,6 +90,35 @@ const BookDetailPage: React.FC = () => {
             genre: '',
         });
         setShowMetaModal(true);
+    };
+
+    const handleLoadChapters = async () => {
+        if (!id) return;
+        setChaptersOpen(o => !o);
+        if (!chaptersOpen && chapters.length === 0) {
+            setLoadingChapters(true);
+            try {
+                const data = await bookApi.getChapters(id);
+                setChapters(data);
+            } catch (err) {
+                setChapterError(getErrorMessage(err));
+            } finally {
+                setLoadingChapters(false);
+            }
+        }
+    };
+
+    const handleSaveChapters = async () => {
+        if (!id) return;
+        setSavingChapters(true);
+        try {
+            await bookApi.saveChapters(id, chapters);
+            setChapterError(null);
+        } catch (err) {
+            setChapterError(getErrorMessage(err));
+        } finally {
+            setSavingChapters(false);
+        }
     };
 
     const handleSaveMeta = async () => {
@@ -331,6 +365,79 @@ const BookDetailPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Chapters (DONE books only) */}
+                            {book.status.status === StatusChoice.DONE && (
+                                <div className="col-12 mt-3">
+                                    <div className="card">
+                                        <div
+                                            className="card-header d-flex align-items-center justify-content-between"
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={handleLoadChapters}
+                                        >
+                                            <h5 className="mb-0">
+                                                <i className="fa-solid fa-list-ol me-2" />
+                                                Chapters
+                                            </h5>
+                                            <i className={`fas fa-angle-${chaptersOpen ? 'up' : 'down'}`} />
+                                        </div>
+                                        {chaptersOpen && (
+                                            <div className="card-body">
+                                                {chapterError && (
+                                                    <div className="alert alert-danger">{chapterError}</div>
+                                                )}
+                                                {loadingChapters ? (
+                                                    <div className="text-center py-3"><div className="spinner-border" /></div>
+                                                ) : chapters.length === 0 ? (
+                                                    <p className="text-muted">No chapters found.</p>
+                                                ) : (
+                                                    <>
+                                                        <div className="table-responsive">
+                                                            <table className="table table-sm">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th style={{ width: 50 }}>#</th>
+                                                                        <th style={{ width: 130 }}>Timestamp</th>
+                                                                        <th>Name</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {chapters.map((ch, i) => (
+                                                                        <tr key={i}>
+                                                                            <td className="text-muted">{ch.index}</td>
+                                                                            <td><code className="small">{ch.timestamp}</code></td>
+                                                                            <td>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    className="form-control form-control-sm"
+                                                                                    value={ch.name}
+                                                                                    onChange={e => setChapters(prev => {
+                                                                                        const next = [...prev];
+                                                                                        next[i] = { ...next[i], name: e.target.value };
+                                                                                        return next;
+                                                                                    })}
+                                                                                />
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                        <button
+                                                            className="btn btn-primary btn-sm"
+                                                            onClick={handleSaveChapters}
+                                                            disabled={savingChapters}
+                                                        >
+                                                            {savingChapters ? <span className="spinner-border spinner-border-sm me-1" role="status" /> : null}
+                                                            Save Chapters
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
