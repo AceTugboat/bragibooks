@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
-import type { Book } from '../types';
+import type { Author, Book, Narrator } from '../types';
 import { StatusChoice } from '../types';
 import { bookApi, getErrorMessage } from '../api/services';
 import { useData } from '../context/DataContext';
@@ -18,6 +18,9 @@ const BookDetailPage: React.FC = () => {
     const [showReprocessModal, setShowReprocessModal] = useState(false);
     const [reprocessAsin, setReprocessAsin] = useState('');
     const [reprocessing, setReprocessing] = useState(false);
+    const [showMetaModal, setShowMetaModal] = useState(false);
+    const [metaForm, setMetaForm] = useState({ title: '', author: '', narrator: '', year: '', description: '', genre: '' });
+    const [savingMeta, setSavingMeta] = useState(false);
     const { refreshBooks } = useData();
 
     useEffect(() => {
@@ -73,7 +76,36 @@ const BookDetailPage: React.FC = () => {
     };
 
     const handleFixMetadata = () => {
-        console.log('Fix metadata for book:', id);
+        setMetaForm({
+            title: book?.title ?? '',
+            author: book?.authors?.map((a: Author) => `${a.first_name} ${a.last_name}`).join(', ') ?? '',
+            narrator: book?.narrators?.map((n: Narrator) => `${n.first_name} ${n.last_name}`).join(', ') ?? '',
+            year: '',
+            description: book?.long_desc ?? book?.short_desc ?? '',
+            genre: '',
+        });
+        setShowMetaModal(true);
+    };
+
+    const handleSaveMeta = async () => {
+        if (!id || !book) return;
+        setSavingMeta(true);
+        try {
+            const updated = await bookApi.updateMetadata(id, {
+                title: metaForm.title || undefined,
+                author: metaForm.author || undefined,
+                narrator: metaForm.narrator || undefined,
+                year: metaForm.year ? parseInt(metaForm.year, 10) : undefined,
+                description: metaForm.description || undefined,
+                genre: metaForm.genre || undefined,
+            });
+            setBook(updated);
+            setShowMetaModal(false);
+        } catch (err) {
+            setError(getErrorMessage(err));
+        } finally {
+            setSavingMeta(false);
+        }
     };
 
     if (loading) {
@@ -397,6 +429,55 @@ const BookDetailPage: React.FC = () => {
                                         Re-processing...
                                     </>
                                 ) : 'Re-process'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {showMetaModal && book && (
+            <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                <div className="modal-dialog modal-lg">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title">Edit Metadata</h5>
+                            <button type="button" className="btn-close" onClick={() => setShowMetaModal(false)} disabled={savingMeta} />
+                        </div>
+                        <div className="modal-body">
+                            <p className="text-muted small mb-3">Changes are written directly to the .m4b file tags.</p>
+                            {[
+                                { key: 'title', label: 'Title' },
+                                { key: 'author', label: 'Author(s)' },
+                                { key: 'narrator', label: 'Narrator(s)' },
+                                { key: 'year', label: 'Year', type: 'number' },
+                                { key: 'genre', label: 'Genre' },
+                            ].map(({ key, label, type }) => (
+                                <div className="mb-3" key={key}>
+                                    <label className="form-label">{label}</label>
+                                    <input
+                                        type={type ?? 'text'}
+                                        className="form-control"
+                                        value={metaForm[key as keyof typeof metaForm]}
+                                        onChange={e => setMetaForm(prev => ({ ...prev, [key]: e.target.value }))}
+                                    />
+                                </div>
+                            ))}
+                            <div className="mb-3">
+                                <label className="form-label">Description</label>
+                                <textarea
+                                    className="form-control"
+                                    rows={4}
+                                    value={metaForm.description}
+                                    onChange={e => setMetaForm(prev => ({ ...prev, description: e.target.value }))}
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowMetaModal(false)} disabled={savingMeta}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleSaveMeta} disabled={savingMeta}>
+                                {savingMeta ? <span className="spinner-border spinner-border-sm me-2" role="status" /> : null}
+                                Save to File
                             </button>
                         </div>
                     </div>

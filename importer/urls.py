@@ -6,7 +6,7 @@ from .api.auth import (
     PasskeyLoginBeginAPI, PasskeyLoginCompleteAPI,
     PasskeyRegisterBeginAPI, PasskeyRegisterCompleteAPI,
 )
-from .api.books import BookDetailAPI, BookReprocessAPI, BooksListAPI
+from .api.books import BookDetailAPI, BookMetadataAPI, BookReprocessAPI, BooksListAPI
 from .api.config import SettingsAPI, SettingsVerifyAPI, VersionsAPI
 from .api.import_pipeline import AsinSearchAPI, DirectoryListAPI, ImportStartAPI, MatchAPI
 from .api.users import UserDetailAPI, UsersListAPI
@@ -32,6 +32,7 @@ api_patterns = [
     path('api/books/', BooksListAPI.as_view(), name='api-books'),
     path('api/books/<int:pk>/', BookDetailAPI.as_view(), name='api-book-detail'),
     path('api/books/<int:pk>/reprocess/', BookReprocessAPI.as_view(), name='api-book-reprocess'),
+    path('api/books/<int:pk>/metadata/', BookMetadataAPI.as_view(), name='api-book-metadata'),
 
     # Import / match
     path('api/match/', MatchAPI.as_view(), name='api-match'),

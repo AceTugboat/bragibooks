@@ -1,5 +1,8 @@
 import json
 import logging
+import shutil
+import subprocess
+from pathlib import Path
 from django.http import JsonResponse
 from django.views import View
 
@@ -130,3 +133,54 @@ class BookReprocessAPI(JsonLoginRequiredMixin, View):
             return JsonResponse({'error': 'Failed to enqueue task'}, status=500)
 
         return JsonResponse({'success': True, 'asin': book.asin})
+
+
+class BookMetadataAPI(JsonLoginRequiredMixin, View):
+    def put(self, request, pk):
+        try:
+            book = Book.objects.get(pk=pk)
+        except Book.DoesNotExist:
+            return JsonResponse({'error': 'Book not found'}, status=404)
+
+        if not book.dest_path:
+            return JsonResponse({'error': 'Book has no output file'}, status=400)
+        if not Path(book.dest_path).exists():
+            return JsonResponse({'error': 'Output file not found on disk'}, status=400)
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON body'}, status=400)
+
+        m4b_tool = shutil.which('m4b-tool')
+        if not m4b_tool:
+            return JsonResponse({'error': 'm4b-tool not available'}, status=503)
+
+        args = [m4b_tool, 'meta']
+        if data.get('title'):
+            args += [f"--name={data['title']}", f"--album={data['title']}"]
+            book.title = data['title']
+        if data.get('author'):
+            args.append(f"--albumartist={data['author']}")
+        if data.get('narrator'):
+            args.append(f"--artist={data['narrator']}")
+        if data.get('year'):
+            args.append(f"--year={data['year']}")
+        if data.get('description'):
+            args.append(f"--description={data['description']}")
+        if data.get('genre'):
+            args.append(f"--genre={data['genre']}")
+        args.append(book.dest_path)
+
+        try:
+            result = subprocess.run(args, capture_output=True, timeout=60)
+            if result.returncode != 0:
+                err_out = result.stderr.decode(errors='replace')
+                return JsonResponse({'error': f'm4b-tool failed: {err_out}'}, status=500)
+        except subprocess.TimeoutExpired:
+            return JsonResponse({'error': 'm4b-tool timed out'}, status=500)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+        book.save()
+        return JsonResponse(serialize_book(book))
