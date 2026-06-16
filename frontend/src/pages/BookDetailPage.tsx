@@ -26,6 +26,11 @@ const BookDetailPage: React.FC = () => {
     const [loadingChapters, setLoadingChapters] = useState(false);
     const [savingChapters, setSavingChapters] = useState(false);
     const [chapterError, setChapterError] = useState<string | null>(null);
+    const [showCoverModal, setShowCoverModal] = useState(false);
+    const [coverFile, setCoverFile] = useState<File | null>(null);
+    const [replacingCover, setReplacingCover] = useState(false);
+    const [coverError, setCoverError] = useState<string | null>(null);
+    const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
     const { refreshBooks } = useData();
 
     useEffect(() => {
@@ -118,6 +123,46 @@ const BookDetailPage: React.FC = () => {
             setChapterError(getErrorMessage(err));
         } finally {
             setSavingChapters(false);
+        }
+    };
+
+    const handleReplaceUpload = async () => {
+        if (!id || !coverFile) return;
+        setReplacingCover(true);
+        setCoverError(null);
+        try {
+            await bookApi.replaceCoverUpload(id, coverFile);
+            setShowCoverModal(false);
+            setCoverFile(null);
+            setCoverPreviewUrl(null);
+        } catch (err) {
+            setCoverError(getErrorMessage(err));
+        } finally {
+            setReplacingCover(false);
+        }
+    };
+
+    const handleRefetchCover = async () => {
+        if (!id) return;
+        setReplacingCover(true);
+        setCoverError(null);
+        try {
+            await bookApi.replaceCoverRefetch(id);
+            setShowCoverModal(false);
+        } catch (err) {
+            setCoverError(getErrorMessage(err));
+        } finally {
+            setReplacingCover(false);
+        }
+    };
+
+    const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] ?? null;
+        setCoverFile(file);
+        if (file) {
+            setCoverPreviewUrl(URL.createObjectURL(file));
+        } else {
+            setCoverPreviewUrl(null);
         }
     };
 
@@ -239,6 +284,15 @@ const BookDetailPage: React.FC = () => {
                                         e.currentTarget.src = '/static/images/cover_not_available.jpg';
                                     }}
                                 />
+                                {book.status.status === StatusChoice.DONE && (
+                                    <button
+                                        className="btn btn-sm btn-outline-secondary w-100 mt-2"
+                                        onClick={() => setShowCoverModal(true)}
+                                    >
+                                        <i className="fa-solid fa-image me-1" />
+                                        Replace Cover
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -537,6 +591,59 @@ const BookDetailPage: React.FC = () => {
                                     </>
                                 ) : 'Re-process'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {showCoverModal && (
+            <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                <div className="modal-dialog">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title">Replace Cover Art</h5>
+                            <button type="button" className="btn-close" onClick={() => setShowCoverModal(false)} disabled={replacingCover} />
+                        </div>
+                        <div className="modal-body">
+                            {coverError && <div className="alert alert-danger">{coverError}</div>}
+                            <div className="mb-4">
+                                <h6>Upload a file</h6>
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    accept="image/jpeg,image/png"
+                                    onChange={handleCoverFileChange}
+                                    disabled={replacingCover}
+                                />
+                                {coverPreviewUrl && (
+                                    <img src={coverPreviewUrl} alt="Preview" className="img-thumbnail mt-2" style={{ maxHeight: 150 }} />
+                                )}
+                                <button
+                                    className="btn btn-primary mt-2 w-100"
+                                    onClick={handleReplaceUpload}
+                                    disabled={!coverFile || replacingCover}
+                                >
+                                    {replacingCover ? <span className="spinner-border spinner-border-sm me-1" /> : null}
+                                    Upload &amp; Apply
+                                </button>
+                            </div>
+                            <hr />
+                            <div>
+                                <h6>Re-fetch from Audible</h6>
+                                <p className="text-muted small">Downloads the original cover from the Audible URL stored for this book.</p>
+                                <button
+                                    className="btn btn-outline-secondary w-100"
+                                    onClick={handleRefetchCover}
+                                    disabled={replacingCover || !book.cover_image_link}
+                                >
+                                    {replacingCover ? <span className="spinner-border spinner-border-sm me-1" /> : null}
+                                    Re-fetch from Audible
+                                </button>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowCoverModal(false)} disabled={replacingCover}>Close</button>
                         </div>
                     </div>
                 </div>

@@ -90,6 +90,19 @@ export const bookApi = {
     saveChapters: async (id: string | number, chapters: Chapter[]): Promise<void> => {
         await apiClient.put(`/api/books/${id}/chapters/`, chapters);
     },
+
+    replaceCoverUpload: async (id: string | number, file: File): Promise<void> => {
+        const form = new FormData();
+        form.append('mode', 'upload');
+        form.append('cover', file);
+        await apiClient.post(`/api/books/${id}/cover/`, form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
+
+    replaceCoverRefetch: async (id: string | number): Promise<void> => {
+        await apiClient.post(`/api/books/${id}/cover/`, { mode: 'refetch' });
+    },
 };
 
 // ASIN Search

@@ -2,7 +2,9 @@ import json
 import logging
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
+from urllib.parse import urlparse
 from django.http import JsonResponse
 from django.views import View
 
@@ -11,6 +13,23 @@ from ..tasks import m4b_merge_task
 from .mixins import JsonLoginRequiredMixin
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_cover_url(url: str) -> bool:
+    """Only allow HTTPS fetches to known Audible/Amazon CDN hostnames."""
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False
+    if parsed.scheme != 'https':
+        return False
+    hostname = (parsed.hostname or '').lower().rstrip('.')
+    allowed = (
+        hostname.endswith('.media-amazon.com') or
+        hostname.endswith('.images-amazon.com') or
+        hostname == 'images-na.ssl-images-amazon.com'
+    )
+    return allowed
 
 
 def serialize_book(book: Book) -> dict:
@@ -247,3 +266,75 @@ class BookChaptersAPI(JsonLoginRequiredMixin, View):
             return JsonResponse({'error': str(e)}, status=500)
 
         return JsonResponse({'ok': True})
+
+
+class BookCoverAPI(JsonLoginRequiredMixin, View):
+    def post(self, request, pk):
+        try:
+            book = Book.objects.get(pk=pk)
+        except Book.DoesNotExist:
+            return JsonResponse({'error': 'Book not found'}, status=404)
+
+        if not book.dest_path or not Path(book.dest_path).exists():
+            return JsonResponse({'error': 'Output file not found on disk'}, status=400)
+
+        m4b_tool = shutil.which('m4b-tool')
+        if not m4b_tool:
+            return JsonResponse({'error': 'm4b-tool not available'}, status=503)
+
+        # Determine mode — multipart sends mode in POST data, JSON sends in body
+        if request.content_type and 'multipart' in request.content_type:
+            mode = request.POST.get('mode')
+        else:
+            try:
+                mode = json.loads(request.body).get('mode')
+            except (json.JSONDecodeError, AttributeError):
+                mode = None
+
+        tmp_cover = None
+        try:
+            if mode == 'upload':
+                cover_file = request.FILES.get('cover')
+                if not cover_file:
+                    return JsonResponse({'error': 'No file uploaded'}, status=400)
+                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+                    for chunk in cover_file.chunks():
+                        tmp.write(chunk)
+                    tmp_cover = tmp.name
+
+            elif mode == 'refetch':
+                if not book.cover_image_link:
+                    return JsonResponse({'error': 'No cover image URL stored for this book'}, status=400)
+                if not _validate_cover_url(book.cover_image_link):
+                    return JsonResponse({'error': 'Cover image URL is not an allowed domain'}, status=400)
+                import requests as req_lib
+                resp = req_lib.get(book.cover_image_link, timeout=15)
+                if resp.status_code != 200:
+                    return JsonResponse({'error': 'Failed to download cover image'}, status=502)
+                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+                    tmp.write(resp.content)
+                    tmp_cover = tmp.name
+            else:
+                return JsonResponse({'error': 'mode must be "upload" or "refetch"'}, status=400)
+
+            result = subprocess.run(
+                [m4b_tool, 'meta', f'--cover={tmp_cover}', book.dest_path],
+                capture_output=True, timeout=60
+            )
+            if result.returncode != 0:
+                return JsonResponse({'error': result.stderr.decode(errors='replace')}, status=500)
+
+            return JsonResponse({'ok': True})
+
+        except subprocess.TimeoutExpired:
+            return JsonResponse({'error': 'm4b-tool timed out'}, status=500)
+        except Exception as e:
+            logger.error("Cover replace error for book %s: %s", pk, e)
+            return JsonResponse({'error': str(e)}, status=500)
+        finally:
+            if tmp_cover:
+                import os as _os
+                try:
+                    _os.unlink(tmp_cover)
+                except OSError:
+                    pass
