@@ -100,7 +100,7 @@ const SettingsPage: React.FC = () => {
         }
     };
 
-    const handleChange = (field: keyof Settings, value: string | number) => {
+    const handleChange = (field: keyof Settings, value: string | number | boolean | null) => {
         const updated = { ...settings, [field]: value };
         setSettings(updated);
         setSuccess(false);
@@ -333,6 +333,125 @@ const SettingsPage: React.FC = () => {
                             />
                             <div className="form-text">
                                 Available tokens: {'{author}'}, {'{title}'}, {'{series_name}'}, {'{series_position}'}, {'{subtitle}'}, {'{year}'}, {'{asin}'}, {'{narrator}'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Processing Options Card */}
+                <div className="card mb-3">
+                    <div className="card-body">
+                        <h5 className="card-title mb-4">Processing Options</h5>
+
+                        <div className="mb-3 form-check form-switch">
+                            <input
+                                className="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                id="skipConversion"
+                                checked={settings.skip_conversion ?? false}
+                                onChange={e => handleChange('skip_conversion', e.target.checked)}
+                            />
+                            <label className="form-check-label" htmlFor="skipConversion">
+                                Skip re-encoding
+                            </label>
+                            <div className="form-text">When source is already M4B/M4A, skip audio conversion entirely</div>
+                        </div>
+
+                        <div className="row mb-3">
+                            <div className="col-md-6">
+                                <label className="form-label" htmlFor="audioBitrate">Audio Bitrate (kbps)</label>
+                                <input
+                                    type="number"
+                                    id="audioBitrate"
+                                    className="form-control"
+                                    placeholder="Auto-detect"
+                                    value={settings.audio_bitrate ?? ''}
+                                    min={0}
+                                    onChange={e => handleChange(
+                                        'audio_bitrate',
+                                        e.target.value === '' ? null : parseInt(e.target.value, 10)
+                                    )}
+                                />
+                                <div className="form-text">Leave blank to auto-detect from source file</div>
+                            </div>
+                            <div className="col-md-6">
+                                <label className="form-label" htmlFor="audioSamplerate">Audio Sample Rate (Hz)</label>
+                                <input
+                                    type="number"
+                                    id="audioSamplerate"
+                                    className="form-control"
+                                    placeholder="Auto-detect"
+                                    value={settings.audio_samplerate ?? ''}
+                                    min={0}
+                                    onChange={e => handleChange(
+                                        'audio_samplerate',
+                                        e.target.value === '' ? null : parseInt(e.target.value, 10)
+                                    )}
+                                />
+                                <div className="form-text">Leave blank to auto-detect (e.g. 44100, 48000)</div>
+                            </div>
+                        </div>
+
+                        <div className="mb-3">
+                            <label className="form-label">Chapter Source</label>
+                            <div className="d-flex gap-4">
+                                <div className="form-check">
+                                    <input
+                                        className="form-check-input"
+                                        type="radio"
+                                        name="chapterSource"
+                                        id="chapterSourceAudible"
+                                        value="audible"
+                                        checked={(settings.chapter_source ?? 'audible') === 'audible'}
+                                        onChange={() => handleChange('chapter_source', 'audible')}
+                                    />
+                                    <label className="form-check-label" htmlFor="chapterSourceAudible">Audible</label>
+                                </div>
+                                <div className="form-check">
+                                    <input
+                                        className="form-check-input"
+                                        type="radio"
+                                        name="chapterSource"
+                                        id="chapterSourceFile"
+                                        value="source_file"
+                                        checked={settings.chapter_source === 'source_file'}
+                                        onChange={() => handleChange('chapter_source', 'source_file')}
+                                    />
+                                    <label className="form-check-label" htmlFor="chapterSourceFile">Source File</label>
+                                </div>
+                            </div>
+                            <div className="form-text">Audible chapters are preferred; use Source File to keep embedded chapter markers</div>
+                        </div>
+
+                        <div className="mb-3 form-check form-switch">
+                            <input
+                                className="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                id="ignoreSourceTags"
+                                checked={settings.ignore_source_tags ?? false}
+                                onChange={e => handleChange('ignore_source_tags', e.target.checked)}
+                            />
+                            <label className="form-check-label" htmlFor="ignoreSourceTags">
+                                Override source tags
+                            </label>
+                            <div className="form-text">Replace all embedded tags with Audible metadata (ignores existing ID3/MP4 tags)</div>
+                        </div>
+
+                        <div className="mb-3">
+                            <label className="form-label" htmlFor="chapterNameFormat">Chapter Name Format</label>
+                            <input
+                                type="text"
+                                id="chapterNameFormat"
+                                className="form-control"
+                                placeholder="Chapter {num:02d}"
+                                value={settings.chapter_name_format ?? ''}
+                                onChange={e => handleChange('chapter_name_format', e.target.value)}
+                            />
+                            <div className="form-text">
+                                Use <code>{'{num}'}</code> for chapter number (e.g. <code>{'Chapter {num:02d}'}</code> &rarr; Chapter 01).
+                                Only applies when Chapter Source is &ldquo;Source File&rdquo;.
                             </div>
                         </div>
                     </div>
