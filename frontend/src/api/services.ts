@@ -72,6 +72,14 @@ export const bookApi = {
     reprocess: async (id: string | number, asin?: string): Promise<void> => {
         await apiClient.post(`/api/books/${id}/reprocess/`, asin ? { asin } : {});
     },
+
+    updateMetadata: async (id: string | number, data: {
+        title?: string; author?: string; narrator?: string;
+        year?: number; description?: string; genre?: string;
+    }): Promise<Book> => {
+        const response = await apiClient.put<Book>(`/api/books/${id}/metadata/`, data);
+        return response.data;
+    },
 };
 
 // ASIN Search
