@@ -38,7 +38,15 @@ const LoginPage: React.FC = () => {
             await checkAuth();
             navigate('/');
         } catch (err) {
-            setError(getErrorMessage(err));
+            const isDomNotAllowed = err instanceof DOMException && err.name === 'NotAllowedError';
+            const isUnknownCred = getErrorMessage(err).toLowerCase().includes('unknown credential');
+            if (isDomNotAllowed || isUnknownCred) {
+                setError(
+                    'No passkey found. Sign in with your username and password, then go to Settings → Security to register a passkey.'
+                );
+            } else {
+                setError(getErrorMessage(err));
+            }
         } finally {
             setPasskeyLoading(false);
         }
