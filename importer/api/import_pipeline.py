@@ -25,21 +25,40 @@ class DirectoryListAPI(JsonLoginRequiredMixin, View):
             input_dir = setting.input_directory if setting else None
             if not input_dir:
                 input_dir = '/downloads' if Path('/downloads').is_dir() else f"{Path.home()}/input"
-            root_path = Path(input_dir)
+            root_path = Path(input_dir).resolve()
             if not root_path.is_dir():
                 return JsonResponse({'contents': []})
-            all_items = []
-            for item in root_path.rglob('*'):
-                stat = item.stat()
-                all_items.append({
-                    'path': str(item),
-                    'name': item.name,
-                    'is_directory': item.is_dir(),
-                    'created_at': stat.st_ctime,
-                    'modified_at': stat.st_mtime,
-                    'size': stat.st_size if item.is_file() else 0,
-                })
-            return JsonResponse({'contents': all_items})
+
+            requested = request.GET.get('path', '')
+            if requested:
+                target = (root_path / requested).resolve()
+                # Path traversal guard
+                try:
+                    target.relative_to(root_path)
+                except ValueError:
+                    return JsonResponse({'error': 'Path outside input directory'}, status=400)
+                if not target.is_dir():
+                    return JsonResponse({'contents': []})
+                scan_path = target
+            else:
+                scan_path = root_path
+
+            items = []
+            for item in sorted(scan_path.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower())):
+                try:
+                    stat = item.stat()
+                    items.append({
+                        'path': str(item.relative_to(root_path)),
+                        'name': item.name,
+                        'is_directory': item.is_dir(),
+                        'has_children': item.is_dir() and any(item.iterdir()),
+                        'created_at': stat.st_ctime,
+                        'modified_at': stat.st_mtime,
+                        'size': stat.st_size if item.is_file() else 0,
+                    })
+                except PermissionError:
+                    continue
+            return JsonResponse({'contents': items})
         except Exception as e:
             logger.error("Error listing directory: %s", e)
             return JsonResponse({'error': str(e)}, status=500)
@@ -72,12 +91,23 @@ class MatchAPI(JsonLoginRequiredMixin, View):
     @method_decorator(ensure_csrf_cookie)
     def post(self, request):
         try:
+            setting = Setting.load()
+            input_dir = setting.input_directory if setting else None
+            if not input_dir:
+                input_dir = '/downloads' if Path('/downloads').is_dir() else f"{Path.home()}/input"
+            root_path = Path(input_dir).resolve()
+
             data = json.loads(request.body)
-            entries = [
-                MatchEntry(src_path=k, asin=v)
-                for k, v in data.items()
-                if k and v
-            ]
+            entries = []
+            for k, v in data.items():
+                if not (k and v):
+                    continue
+                target = (root_path / k).resolve()
+                try:
+                    target.relative_to(root_path)
+                except ValueError:
+                    return JsonResponse({'error': 'Path outside input directory'}, status=400)
+                entries.append(MatchEntry(src_path=str(target), asin=v))
             books = process_match(entries)
             return JsonResponse({'success': True, 'books_queued': len(books)})
         except MatchValidationError as e:
