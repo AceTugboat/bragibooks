@@ -221,7 +221,7 @@ const ImportPage: React.FC = () => {
                             >
                                 &larr; Back
                             </button>
-                            <h5 className="mb-0">Step 2 — Match ASINs</h5>
+                            <h5 className="mb-0">Step 2 — Match Audiobook</h5>
                         </div>
                         <div className="card-body">
                             {error && (
@@ -229,72 +229,58 @@ const ImportPage: React.FC = () => {
                             )}
                             {cards.map((card, index) => (
                                 <div key={card.srcPath} className="row mb-4 pb-4 border-bottom">
-                                    <div className="col-md-3 text-center">
+                                    <div className="col-auto text-center">
                                         <img
                                             src={card.imageUrl}
                                             alt={card.srcPath.split('/').pop()}
-                                            className="img-fluid mb-2"
-                                            style={{ width: 150, borderRadius: 10, objectFit: 'cover' }}
+                                            style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 8 }}
                                             onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }}
                                         />
+                                    </div>
+                                    <div className="col d-flex flex-column justify-content-center gap-2">
                                         <div className="fw-bold text-break small">
                                             {card.srcPath.split('/').pop()}
                                         </div>
-                                    </div>
-                                    <div className="col-md-9 d-flex flex-column justify-content-center gap-2">
                                         {card.searching ? (
                                             <div className="d-flex align-items-center gap-2">
                                                 <div className="spinner-border spinner-border-sm" role="status" />
-                                                <span className="text-muted">Searching Audible…</span>
-                                            </div>
-                                        ) : card.options.length > 0 ? (
-                                            <div>
-                                                <label className="form-label fw-semibold">Select a match</label>
-                                                {card.options.map(opt => (
-                                                    <div key={opt.asin} className="mb-2 d-flex align-items-center gap-2">
-                                                        <input
-                                                            className="form-check-input flex-shrink-0"
-                                                            type="radio"
-                                                            name={`asin-${index}`}
-                                                            id={`asin-${index}-${opt.asin}`}
-                                                            value={opt.asin}
-                                                            checked={card.selectedAsin === opt.asin}
-                                                            onChange={() => handleAsinSelect(index, opt.asin)}
-                                                        />
-                                                        <img
-                                                            src={opt.image_link?.[0] ?? FALLBACK_IMAGE}
-                                                            alt=""
-                                                            style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}
-                                                            onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }}
-                                                        />
-                                                        <label
-                                                            className="form-check-label text-truncate"
-                                                            htmlFor={`asin-${index}-${opt.asin}`}
-                                                            title={`${opt.title} — ${opt.authors}`}
-                                                        >
-                                                            <div className="fw-semibold">{opt.title}</div>
-                                                            <div className="text-muted small">{opt.authors} <span className="ms-1">({opt.asin})</span></div>
-                                                        </label>
-                                                    </div>
-                                                ))}
+                                                <span className="text-muted small">Searching Audible…</span>
                                             </div>
                                         ) : (
-                                            <div className="text-muted small">No Audible results found.</div>
+                                            <div>
+                                                <label className="form-label fw-semibold mb-1">Match</label>
+                                                <select
+                                                    className="form-select form-select-sm"
+                                                    value={card.selectedAsin}
+                                                    onChange={e => handleAsinSelect(index, e.target.value)}
+                                                >
+                                                    {card.options.length === 0 && (
+                                                        <option value="" disabled>No results found</option>
+                                                    )}
+                                                    {card.options.map(opt => (
+                                                        <option key={opt.asin} value={opt.asin}>
+                                                            {opt.title} — {opt.author}{opt.narrator ? ` / ${opt.narrator}` : ''} ({opt.asin})
+                                                        </option>
+                                                    ))}
+                                                    <option value="">Enter manually…</option>
+                                                </select>
+                                            </div>
                                         )}
-                                        <div>
-                                            <label className="form-label fw-semibold mb-1">
-                                                Manual ASIN
-                                                <span className="text-muted fw-normal ms-1">(overrides selection)</span>
-                                            </label>
-                                            <input
-                                                className="form-control form-control-sm"
-                                                type="text"
-                                                placeholder="e.g. B001234567"
-                                                maxLength={10}
-                                                value={card.manualAsin}
-                                                onChange={e => handleManualAsinChange(index, e.target.value)}
-                                            />
-                                        </div>
+                                        {(card.selectedAsin === '' || card.options.length === 0) && (
+                                            <div>
+                                                <label className="form-label small mb-1">
+                                                    ASIN <span className="text-muted">(10 characters)</span>
+                                                </label>
+                                                <input
+                                                    className="form-control form-control-sm"
+                                                    type="text"
+                                                    placeholder="e.g. B001234567"
+                                                    maxLength={10}
+                                                    value={card.manualAsin}
+                                                    onChange={e => handleManualAsinChange(index, e.target.value)}
+                                                />
+                                            </div>
+                                        )}
                                         <button
                                             type="button"
                                             className="btn btn-sm btn-outline-danger align-self-start"
@@ -313,11 +299,11 @@ const ImportPage: React.FC = () => {
                         </div>
                         <div className="card-footer">
                             <button
-                                className="btn btn-primary w-100"
+                                className="btn btn-success w-100"
                                 type="submit"
                                 disabled={!canSubmit || submitting}
                             >
-                                {submitting ? 'Submitting…' : 'Submit ASINs'}
+                                {submitting ? 'Submitting…' : 'Submit'}
                             </button>
                         </div>
                     </div>
