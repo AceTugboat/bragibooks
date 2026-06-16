@@ -612,6 +612,13 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
 }
 
 
+// Import page selection panel
+.import-selection-panel {
+    background-color: rgba(0, 0, 0, 0.02);
+    overflow-y: auto;
+    max-height: calc(100vh - 300px);
+}
+
 // Dark mode theme styles
 [data-theme="dark"] {
     // Base colors
@@ -904,6 +911,11 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
                 }
             }
         }
+    }
+
+    // Import page selection panel (dark mode)
+    .import-selection-panel {
+        background-color: rgba(255, 255, 255, 0.03);
     }
 
     // Pagination (dark mode)
