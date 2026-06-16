@@ -1,6 +1,7 @@
 import apiClient from './client';
 import type {
     Book,
+    Chapter,
     Settings,
     DirectoryContents,
     AsinSearchResult,
@@ -79,6 +80,15 @@ export const bookApi = {
     }): Promise<Book> => {
         const response = await apiClient.put<Book>(`/api/books/${id}/metadata/`, data);
         return response.data;
+    },
+
+    getChapters: async (id: string | number): Promise<Chapter[]> => {
+        const response = await apiClient.get<Chapter[]>(`/api/books/${id}/chapters/`);
+        return response.data;
+    },
+
+    saveChapters: async (id: string | number, chapters: Chapter[]): Promise<void> => {
+        await apiClient.put(`/api/books/${id}/chapters/`, chapters);
     },
 };
 
