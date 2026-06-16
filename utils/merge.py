@@ -121,20 +121,21 @@ def run_m4b_merge(asin: str):
 
     audible = audible_helper.BookData(asin)
 
-    chapters = audible.get_chapters()
-    if setting and setting.chapter_source == 'source_file':
-        chapters = None
-
-    # Process metadata and run components to merge files
-    m4b = BragiM4bMerge(
-        input_data,
-        audible.fetch_api_data(config.api_url),
-        Path(book.src_path),
-        chapters,
-        setting=setting,
-    )
-
     try:
+        metadata = audible.fetch_api_data(config.api_url)
+
+        chapters = audible.get_chapters()
+        if setting and setting.chapter_source == 'source_file':
+            chapters = None
+
+        m4b = BragiM4bMerge(
+            input_data,
+            metadata,
+            Path(book.src_path),
+            chapters,
+            setting=setting,
+        )
+
         logger.info(f"Processing {book.title}")
         m4b.run_merge()
     except Exception as e:
@@ -148,7 +149,7 @@ def run_m4b_merge(asin: str):
 
     book.dest_path = (
         f"{m4b.book_output}/"
-        f"{audible.fetch_api_data(config.api_url)['authors'][0]}/"
+        f"{metadata['authors'][0]}/"
         f"{book.title}/"
         f"{book.title}.m4b"
     )
