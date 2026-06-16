@@ -83,27 +83,6 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .sidebar-search {
-        padding: 1rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-
-        input {
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #FFFFFF;
-
-            &::placeholder {
-                color: rgba(255, 255, 255, 0.6);
-            }
-
-            &:focus {
-                background-color: rgba(255, 255, 255, 0.15);
-                border-color: $honey-gold;
-                color: #FFFFFF;
-            }
-        }
-    }
-
     .sidebar-nav {
         flex: 1;
         padding: 0 1rem; // Add horizontal padding for rounded items
@@ -226,23 +205,6 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
         white-space: nowrap;
     }
 
-    .mobile-search {
-        input {
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #FFFFFF;
-
-            &::placeholder {
-                color: rgba(255, 255, 255, 0.6);
-            }
-
-            &:focus {
-                background-color: rgba(255, 255, 255, 0.15);
-                border-color: $honey-gold;
-                color: #FFFFFF;
-            }
-        }
-    }
 }
 
 // Mobile Overlay
@@ -675,10 +637,6 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
             border-bottom-color: rgba(255, 255, 255, 0.05);
         }
 
-        .sidebar-search {
-            border-bottom-color: rgba(255, 255, 255, 0.05);
-        }
-
         .sidebar-footer {
             border-top-color: rgba(255, 255, 255, 0.05);
         }
@@ -851,6 +809,17 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
                 border-color: $honey-gold;
                 color: $dark-text;
             }
+        }
+    }
+
+    .btn-outline-secondary {
+        border-color: $dark-border;
+        color: $dark-text;
+
+        &:hover {
+            background-color: $dark-surface;
+            border-color: $honey-gold;
+            color: $dark-text;
         }
     }
 
