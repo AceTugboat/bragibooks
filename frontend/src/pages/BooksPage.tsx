@@ -5,7 +5,7 @@ import LibraryBookCard from '../components/LibraryBookCard';
 import Pagination from '../components/Pagination';
 import { useData } from '../context/DataContext';
 
-type SortOption = 'title' | 'release_date' | 'author';
+type SortOption = 'title' | 'release_date' | 'author' | 'recently_added';
 
 const BooksPage: React.FC = () => {
     const location = useLocation();
@@ -58,6 +58,8 @@ const BooksPage: React.FC = () => {
                     const authorA = a.authors[0] ? `${a.authors[0].last_name} ${a.authors[0].first_name}` : '';
                     const authorB = b.authors[0] ? `${b.authors[0].last_name} ${b.authors[0].first_name}` : '';
                     return authorA.localeCompare(authorB);
+                case 'recently_added':
+                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
                 default:
                     return 0;
             }
@@ -150,6 +152,7 @@ const BooksPage: React.FC = () => {
                             <option value="title">Alphabetical</option>
                             <option value="release_date">Release Date</option>
                             <option value="author">Author</option>
+                            <option value="recently_added">Recently Added</option>
                         </select>
                     </div>
 
