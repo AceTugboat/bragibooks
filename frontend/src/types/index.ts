@@ -90,12 +90,8 @@ export interface DirectoryContents {
 export interface AsinSearchResult {
     asin: string;
     title: string;
-    subtitle?: string;
-    authors: string;
-    narrators: string;
-    publisher: string;
-    release_date: string;
-    runtime_length_min: number;
+    author: string;
+    narrator: string;
     image_link?: string[];
     score: number;
 }
