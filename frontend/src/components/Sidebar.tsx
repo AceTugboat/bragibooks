@@ -53,15 +53,6 @@ const Sidebar: React.FC = () => {
                         <i className="fa-solid fa-bars fa-lg"></i>
                     </button>
                 </div>
-                <div className="mobile-search flex-grow-1">
-                    <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Search..."
-                        disabled
-                        title="Coming soon"
-                    />
-                </div>
             </div>
 
             {/* Overlay for mobile */}
@@ -87,17 +78,6 @@ const Sidebar: React.FC = () => {
                             <i className="fa-solid fa-times"></i>
                         </button>
                     </div>
-                </div>
-
-                {/* Search Bar - Hidden on mobile as it's in the top nav */}
-                <div className="sidebar-search d-none d-md-block">
-                    <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Search books..."
-                        disabled
-                        title="Coming soon"
-                    />
                 </div>
 
                 {/* Navigation Links */}
