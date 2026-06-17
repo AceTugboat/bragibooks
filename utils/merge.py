@@ -79,7 +79,10 @@ class BragiM4bMerge(m4b_helper.M4bMerge):
 
 
 def _update_status_message(book, message):
-    book.status.message = message
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%H:%M:%S')
+    line = f"[{timestamp}] {message}"
+    book.status.message = (book.status.message + '\n' + line).lstrip('\n')
     book.status.save(update_fields=['message'])
 
 
@@ -111,6 +114,8 @@ def run_m4b_merge(asin: str):
     logger.debug(f'Using output format: {config.path_format}')
 
     book = Book.objects.get(asin=asin)
+    book.status.message = ""
+    book.status.save(update_fields=['message'])
     setting = Setting.load()
     logger.info(
         f"{'-' * 15} Starting to process {asin}: {book.title} {'-' * 15}")
@@ -154,6 +159,12 @@ def run_m4b_merge(asin: str):
             traceback.format_exc() if settings.DEBUG else str(e)
         book.status.message = message
         book.status.save()
+        return
+
+    # Re-fetch status in case user cancelled while m4b-tool was running
+    book.status.refresh_from_db()
+    if book.status.status != StatusChoices.PROCESSING:
+        logger.info("Book %s was cancelled during processing, skipping DONE", asin)
         return
 
     book.dest_path = (

@@ -10,6 +10,9 @@ const ProcessingPage: React.FC = () => {
     const [reprocessAsin, setReprocessAsin] = useState('');
     const [reprocessError, setReprocessError] = useState<string | null>(null);
     const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
+    const [confirmCancelId, setConfirmCancelId] = useState<number | null>(null);
+    const [cancellingId, setCancellingId] = useState<number | null>(null);
+    const [expandedProcessing, setExpandedProcessing] = useState<Set<number>>(new Set());
 
     // 1-second poll while this page is open and books are processing
     useEffect(() => {
@@ -17,6 +20,19 @@ const ProcessingPage: React.FC = () => {
         const id = setInterval(refreshBooks, 1_000);
         return () => clearInterval(id);
     }, [books.processing.length, refreshBooks]);
+
+    const handleCancel = async (bookId: number) => {
+        try {
+            setCancellingId(bookId);
+            await bookApi.cancel(bookId);
+            await refreshBooks();
+        } catch (err) {
+            console.error('Cancel failed:', getErrorMessage(err));
+        } finally {
+            setCancellingId(null);
+            setConfirmCancelId(null);
+        }
+    };
 
     const handleReprocess = async (bookId: number, asin?: string) => {
         try {
@@ -52,11 +68,23 @@ const ProcessingPage: React.FC = () => {
                             const elapsedStr = elapsed < 60
                                 ? `${elapsed}s`
                                 : `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
+                            const isConfirming = confirmCancelId === book.id;
+                            const isCancelling = cancellingId === book.id;
+                            const isExpanded = expandedProcessing.has(book.id);
+                            const logLines = book.status.message
+                                ? book.status.message.split('\n').filter(Boolean)
+                                : [];
+                            const lastLine = logLines[logLines.length - 1] ?? '';
+                            const runtimeHours = Math.floor(book.runtime_length_minutes / 60);
+                            const runtimeMins = book.runtime_length_minutes % 60;
+                            const runtimeStr = runtimeHours > 0
+                                ? `${runtimeHours}h ${runtimeMins}m`
+                                : `${runtimeMins}m`;
                             return (
                                 <div key={book.id} className="list-group-item">
                                     <div className="d-flex align-items-center gap-3 mb-2">
-                                        <div className="flex-grow-1">
-                                            <div className="fw-bold">{book.title}</div>
+                                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                                            <div className="fw-bold text-truncate">{book.title}</div>
                                             {book.authors[0] && (
                                                 <div className="text-muted small">
                                                     {book.authors[0].first_name} {book.authors[0].last_name}
@@ -64,6 +92,26 @@ const ProcessingPage: React.FC = () => {
                                             )}
                                         </div>
                                         <span className="text-muted small flex-shrink-0">{elapsedStr}</span>
+                                        <button
+                                            className="btn btn-link btn-sm p-0 flex-shrink-0 text-muted"
+                                            title={isExpanded ? 'Hide details' : 'Show details'}
+                                            onClick={() => setExpandedProcessing(prev => {
+                                                const next = new Set(prev);
+                                                next.has(book.id) ? next.delete(book.id) : next.add(book.id);
+                                                return next;
+                                            })}
+                                        >
+                                            <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'}`} />
+                                        </button>
+                                        {!isConfirming && (
+                                            <button
+                                                className="btn btn-outline-danger btn-sm flex-shrink-0"
+                                                title="Cancel job"
+                                                onClick={() => setConfirmCancelId(book.id)}
+                                            >
+                                                <i className="fas fa-times" />
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="progress mb-1" style={{ height: 6 }}>
                                         <div
@@ -72,10 +120,62 @@ const ProcessingPage: React.FC = () => {
                                             style={{ width: '100%' }}
                                         />
                                     </div>
-                                    {book.status.message && (
+                                    {lastLine && (
                                         <div className="text-muted small mt-1">
                                             <i className="fas fa-circle-info me-1" />
-                                            {book.status.message}
+                                            {lastLine.replace(/^\[\d+:\d+:\d+\] /, '')}
+                                        </div>
+                                    )}
+                                    {isExpanded && (
+                                        <div className="mt-3 border-top pt-3">
+                                            <div className="row g-2 mb-3 small text-muted">
+                                                <div className="col-sm-6">
+                                                    <span className="fw-semibold">ASIN: </span>{book.asin}
+                                                </div>
+                                                <div className="col-sm-6">
+                                                    <span className="fw-semibold">Runtime: </span>
+                                                    {book.runtime_length_minutes > 0 ? runtimeStr : 'Unknown'}
+                                                </div>
+                                                <div className="col-12">
+                                                    <span className="fw-semibold">Source: </span>
+                                                    <span className="font-monospace" style={{ wordBreak: 'break-all' }}>
+                                                        {book.src_path}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {logLines.length > 0 && (
+                                                <>
+                                                    <div className="small fw-semibold text-muted mb-1">Processing log</div>
+                                                    <pre
+                                                        className="small bg-black bg-opacity-10 rounded p-2 mb-0"
+                                                        style={{ whiteSpace: 'pre-wrap', fontSize: '0.75rem', maxHeight: 200, overflowY: 'auto' }}
+                                                    >
+                                                        {logLines.join('\n')}
+                                                    </pre>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                    {isConfirming && (
+                                        <div className="d-flex align-items-center gap-2 mt-2">
+                                            <span className="small text-danger">Cancel this job?</span>
+                                            <button
+                                                className="btn btn-danger btn-sm"
+                                                disabled={isCancelling}
+                                                onClick={() => handleCancel(book.id)}
+                                            >
+                                                {isCancelling
+                                                    ? <span className="spinner-border spinner-border-sm" role="status" />
+                                                    : 'Yes, cancel'
+                                                }
+                                            </button>
+                                            <button
+                                                className="btn btn-outline-secondary btn-sm"
+                                                disabled={isCancelling}
+                                                onClick={() => setConfirmCancelId(null)}
+                                            >
+                                                No
+                                            </button>
                                         </div>
                                     )}
                                 </div>

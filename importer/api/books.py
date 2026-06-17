@@ -268,6 +268,24 @@ class BookChaptersAPI(JsonLoginRequiredMixin, View):
         return JsonResponse({'ok': True})
 
 
+class BookCancelAPI(JsonLoginRequiredMixin, View):
+    def post(self, request, pk):
+        try:
+            book = Book.objects.select_related('status').get(pk=pk)
+        except Book.DoesNotExist:
+            return JsonResponse({'error': 'Book not found'}, status=404)
+
+        if book.status.status != StatusChoices.PROCESSING:
+            return JsonResponse({'error': 'Book is not currently processing'}, status=400)
+
+        book.status.status = StatusChoices.ERROR
+        book.status.message = 'Cancelled by user'
+        book.status.save()
+
+        logger.info("Book %s (%s) cancelled by user", pk, book.title)
+        return JsonResponse({'success': True})
+
+
 class BookCoverAPI(JsonLoginRequiredMixin, View):
     def post(self, request, pk):
         try:
