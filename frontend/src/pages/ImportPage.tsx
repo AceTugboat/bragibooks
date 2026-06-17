@@ -43,10 +43,6 @@ const ImportPage: React.FC = () => {
     }, []);
 
     const handleNext = useCallback(async () => {
-        if (selectedPaths.length === 0) {
-            setError('Select at least one directory to import');
-            return;
-        }
         setError(null);
 
         const initial: AsinCard[] = selectedPaths.map(p => ({
@@ -146,35 +142,65 @@ const ImportPage: React.FC = () => {
                 <div className="col">
                     <div className="card">
                         <div className="card-header">
-                            <h5 className="mb-0">Step 1 — Choose Files or Directories to process</h5>
+                            <h5 className="mb-0">Step 1 — Choose Files or Directories to Import</h5>
                         </div>
                         <div className="card-body p-0">
                             {error && (
-                                <div className="alert alert-danger m-3" role="alert">{error}</div>
+                                <div className="alert alert-danger m-3 mb-0" role="alert">{error}</div>
                             )}
-                            {loadingFiles ? (
-                                <div className="text-center p-4">
-                                    <div className="spinner-border" role="status">
-                                        <span className="visually-hidden">Loading...</span>
-                                    </div>
+                            <div className="d-flex" style={{ minHeight: 400 }}>
+                                {/* File Explorer */}
+                                <div className="flex-grow-1 border-end" style={{ minWidth: 0 }}>
+                                    {loadingFiles ? (
+                                        <div className="text-center p-4">
+                                            <div className="spinner-border" role="status">
+                                                <span className="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <FileExplorer
+                                            rootItems={contents}
+                                            selectedPaths={selectedPaths}
+                                            onSelectionChange={setSelectedPaths}
+                                            fetchChildren={fetchChildren}
+                                        />
+                                    )}
                                 </div>
-                            ) : (
-                                <FileExplorer
-                                    rootItems={contents}
-                                    selectedPaths={selectedPaths}
-                                    onSelectionChange={setSelectedPaths}
-                                    fetchChildren={fetchChildren}
-                                />
-                            )}
-                            <div className="p-3">
-                                <button
-                                    className="btn btn-primary w-100"
-                                    onClick={handleNext}
-                                    disabled={loadingFiles}
-                                >
-                                    Next
-                                </button>
+                                {/* Selection Panel */}
+                                <div className="import-selection-panel p-3" style={{ width: 260, flexShrink: 0 }}>
+                                    <div className="fw-semibold mb-2 small text-uppercase text-muted">
+                                        Selected ({selectedPaths.length})
+                                    </div>
+                                    {selectedPaths.length === 0 ? (
+                                        <p className="text-muted small">Nothing selected yet. Check items on the left to add them.</p>
+                                    ) : (
+                                        <ul className="list-unstyled mb-0">
+                                            {selectedPaths.map(p => (
+                                                <li key={p} className="d-flex align-items-start justify-content-between gap-1 mb-2">
+                                                    <span className="small text-break">{p.split('/').pop() || p}</span>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-link btn-sm p-0 flex-shrink-0 text-danger"
+                                                        onClick={() => setSelectedPaths(prev => prev.filter(x => x !== p))}
+                                                        title="Remove"
+                                                    >
+                                                        <i className="fas fa-times" />
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
                             </div>
+                        </div>
+                        <div className="card-footer p-3">
+                            <button
+                                className="btn btn-success w-100"
+                                onClick={handleNext}
+                                disabled={loadingFiles || selectedPaths.length === 0}
+                            >
+                                Next →
+                            </button>
                         </div>
                     </div>
                 </div>

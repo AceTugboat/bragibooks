@@ -131,7 +131,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                     </button>
                 </div>
             </div>
-            <div className="list-group list-group-flush" style={{ height: 'calc(100vh - 450px)', overflowY: 'auto' }}>
+            <div className="list-group list-group-flush" style={{ maxHeight: 'calc(100vh - 350px)', overflowY: 'auto' }}>
                 {rootItems.length === 0 ? (
                     <div className="list-group-item text-center text-muted">No files or directories found</div>
                 ) : (
