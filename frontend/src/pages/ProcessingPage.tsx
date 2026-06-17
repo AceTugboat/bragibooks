@@ -74,7 +74,12 @@ const ProcessingPage: React.FC = () => {
                             const logLines = book.status.message
                                 ? book.status.message.split('\n').filter(Boolean)
                                 : [];
-                            const lastLine = logLines[logLines.length - 1] ?? '';
+                            // Show the last milestone line ([HH:MM:SS] prefix) inline;
+                            // fall back to the last raw line if no milestone exists yet.
+                            const milestoneLines = logLines.filter(l => /^\[\d{2}:\d{2}:\d{2}\]/.test(l));
+                            const lastLine = milestoneLines[milestoneLines.length - 1]
+                                ?? logLines[logLines.length - 1]
+                                ?? '';
                             const runtimeHours = Math.floor(book.runtime_length_minutes / 60);
                             const runtimeMins = book.runtime_length_minutes % 60;
                             const runtimeStr = runtimeHours > 0
@@ -123,7 +128,7 @@ const ProcessingPage: React.FC = () => {
                                     {lastLine && (
                                         <div className="text-muted small mt-1">
                                             <i className="fas fa-circle-info me-1" />
-                                            {lastLine.replace(/^\[\d+:\d+:\d+\] /, '')}
+                                            {lastLine}
                                         </div>
                                     )}
                                     {isExpanded && (
