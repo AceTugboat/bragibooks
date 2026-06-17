@@ -13,6 +13,7 @@ const ProcessingPage: React.FC = () => {
     const [confirmCancelId, setConfirmCancelId] = useState<number | null>(null);
     const [cancellingId, setCancellingId] = useState<number | null>(null);
     const [expandedProcessing, setExpandedProcessing] = useState<Set<number>>(new Set());
+    const [expandedCompleted, setExpandedCompleted] = useState<Set<number>>(new Set());
 
     // 1-second poll while this page is open and books are processing
     useEffect(() => {
@@ -268,31 +269,65 @@ const ProcessingPage: React.FC = () => {
                     <p className="text-muted">No completed books yet.</p>
                 ) : (
                     <div className="list-group">
-                        {recentlyCompleted.map(book => (
-                            <Link
-                                key={book.id}
-                                to={`/books/${book.id}`}
-                                className="list-group-item list-group-item-action d-flex align-items-center gap-3"
-                            >
-                                {book.cover_image_link && (
-                                    <img
-                                        src={book.cover_image_link}
-                                        alt=""
-                                        width={40}
-                                        height={40}
-                                        style={{ objectFit: 'cover', borderRadius: 4 }}
-                                    />
-                                )}
-                                <div>
-                                    <strong>{book.title}</strong>
-                                    {book.authors[0] && (
-                                        <span className="text-muted ms-2">
-                                            {book.authors[0].first_name} {book.authors[0].last_name}
-                                        </span>
+                        {recentlyCompleted.map(book => {
+                            const isExpanded = expandedCompleted.has(book.id);
+                            const toggleExpand = (e: React.MouseEvent) => {
+                                e.preventDefault();
+                                setExpandedCompleted(prev => {
+                                    const next = new Set(prev);
+                                    next.has(book.id) ? next.delete(book.id) : next.add(book.id);
+                                    return next;
+                                });
+                            };
+                            return (
+                                <div key={book.id} className="list-group-item">
+                                    <div className="d-flex align-items-center gap-3">
+                                        <Link
+                                            to={`/books/${book.id}`}
+                                            className="d-flex align-items-center gap-3 flex-grow-1 text-decoration-none text-reset"
+                                            style={{ minWidth: 0 }}
+                                        >
+                                            {book.cover_image_link && (
+                                                <img
+                                                    src={book.cover_image_link}
+                                                    alt=""
+                                                    width={40}
+                                                    height={40}
+                                                    style={{ objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}
+                                                />
+                                            )}
+                                            <div style={{ minWidth: 0 }}>
+                                                <strong className="d-block text-truncate">{book.title}</strong>
+                                                {book.authors[0] && (
+                                                    <span className="text-muted small">
+                                                        {book.authors[0].first_name} {book.authors[0].last_name}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </Link>
+                                        {book.status.message && (
+                                            <button
+                                                className="btn btn-link btn-sm p-0 flex-shrink-0 text-muted"
+                                                title={isExpanded ? 'Hide log' : 'Show log'}
+                                                onClick={toggleExpand}
+                                            >
+                                                <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'}`} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    {isExpanded && book.status.message && (
+                                        <div className="mt-2 pt-2 border-top">
+                                            <pre
+                                                className="small bg-black bg-opacity-10 rounded p-2 mb-0"
+                                                style={{ whiteSpace: 'pre-wrap', fontSize: '0.75rem', maxHeight: 300, overflowY: 'auto' }}
+                                            >
+                                                {book.status.message}
+                                            </pre>
+                                        </div>
                                     )}
                                 </div>
-                            </Link>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </section>

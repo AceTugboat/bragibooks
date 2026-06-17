@@ -224,8 +224,7 @@ def run_m4b_merge(asin: str):
         f"{book.title}.m4b"
     )
     book.status.status = StatusChoices.DONE
-    book.status.message = ""
-    book.status.save()
+    book.status.save(update_fields=['status'])
     logger.info(f"{'-' * 15} Done processing {asin} {'-' * 15}")
 
 
