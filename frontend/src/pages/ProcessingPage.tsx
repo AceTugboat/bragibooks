@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { useData } from '../context/DataContext';
@@ -9,6 +9,14 @@ const ProcessingPage: React.FC = () => {
     const [reprocessingId, setReprocessingId] = useState<number | null>(null);
     const [reprocessAsin, setReprocessAsin] = useState('');
     const [reprocessError, setReprocessError] = useState<string | null>(null);
+    const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
+
+    // 1-second poll while this page is open and books are processing
+    useEffect(() => {
+        if (books.processing.length === 0) return;
+        const id = setInterval(refreshBooks, 1_000);
+        return () => clearInterval(id);
+    }, [books.processing.length, refreshBooks]);
 
     const handleReprocess = async (bookId: number, asin?: string) => {
         try {
@@ -39,21 +47,40 @@ const ProcessingPage: React.FC = () => {
                     <p className="text-muted">Nothing processing right now.</p>
                 ) : (
                     <div className="list-group">
-                        {books.processing.map(book => (
-                            <div key={book.id} className="list-group-item d-flex align-items-center gap-3">
-                                <div className="spinner-border spinner-border-sm text-primary flex-shrink-0" role="status">
-                                    <span className="visually-hidden">Processing…</span>
-                                </div>
-                                <div className="flex-grow-1">
-                                    <strong>{book.title}</strong>
-                                    {book.authors[0] && (
-                                        <span className="text-muted ms-2">
-                                            {book.authors[0].first_name} {book.authors[0].last_name}
-                                        </span>
+                        {books.processing.map(book => {
+                            const elapsed = Math.floor((Date.now() - new Date(book.updated_at).getTime()) / 1000);
+                            const elapsedStr = elapsed < 60
+                                ? `${elapsed}s`
+                                : `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
+                            return (
+                                <div key={book.id} className="list-group-item">
+                                    <div className="d-flex align-items-center gap-3 mb-2">
+                                        <div className="flex-grow-1">
+                                            <div className="fw-bold">{book.title}</div>
+                                            {book.authors[0] && (
+                                                <div className="text-muted small">
+                                                    {book.authors[0].first_name} {book.authors[0].last_name}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-muted small flex-shrink-0">{elapsedStr}</span>
+                                    </div>
+                                    <div className="progress mb-1" style={{ height: 6 }}>
+                                        <div
+                                            className="progress-bar progress-bar-striped progress-bar-animated"
+                                            role="progressbar"
+                                            style={{ width: '100%' }}
+                                        />
+                                    </div>
+                                    {book.status.message && (
+                                        <div className="text-muted small mt-1">
+                                            <i className="fas fa-circle-info me-1" />
+                                            {book.status.message}
+                                        </div>
                                     )}
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </section>
@@ -76,7 +103,28 @@ const ProcessingPage: React.FC = () => {
                                             </span>
                                         )}
                                         {book.status.message && (
-                                            <p className="text-danger small mb-1 mt-1">{book.status.message}</p>
+                                            <>
+                                                <div
+                                                    className="text-danger small mt-1 d-flex align-items-center gap-1"
+                                                    style={{ cursor: 'pointer' }}
+                                                    onClick={() => setExpandedLogs(prev => {
+                                                        const next = new Set(prev);
+                                                        next.has(book.id) ? next.delete(book.id) : next.add(book.id);
+                                                        return next;
+                                                    })}
+                                                >
+                                                    <i className={`fas fa-angle-${expandedLogs.has(book.id) ? 'up' : 'down'}`} />
+                                                    {expandedLogs.has(book.id) ? 'Hide logs' : 'Show logs'}
+                                                </div>
+                                                {expandedLogs.has(book.id) && (
+                                                    <pre
+                                                        className="text-danger small bg-danger bg-opacity-10 rounded p-2 mt-1"
+                                                        style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 300, overflowY: 'auto', fontSize: '0.75rem' }}
+                                                    >
+                                                        {book.status.message}
+                                                    </pre>
+                                                )}
+                                            </>
                                         )}
                                         {reprocessError && reprocessingId === book.id && (
                                             <p className="text-danger small mb-0">{reprocessError}</p>
@@ -93,7 +141,6 @@ const ProcessingPage: React.FC = () => {
                                             />
                                             <button
                                                 className="btn btn-sm btn-outline-primary"
-                                                disabled={reprocessingId === book.id && reprocessAsin === '' && false}
                                                 onClick={() => handleReprocess(book.id, reprocessAsin || undefined)}
                                             >
                                                 {reprocessingId === book.id ? (

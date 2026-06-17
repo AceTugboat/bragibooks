@@ -78,6 +78,11 @@ class BragiM4bMerge(m4b_helper.M4bMerge):
             logger.warning("Could not reformat chapter names: %s", chapter_file)
 
 
+def _update_status_message(book, message):
+    book.status.message = message
+    book.status.save(update_fields=['message'])
+
+
 def set_configs():
     existing_settings = Setting.load()
     if existing_settings:
@@ -109,6 +114,7 @@ def run_m4b_merge(asin: str):
     setting = Setting.load()
     logger.info(
         f"{'-' * 15} Starting to process {asin}: {book.title} {'-' * 15}")
+    _update_status_message(book, "Preparing: reading input files…")
 
     input_data = helpers.get_directory(Path(book.src_path))
     if not input_data:
@@ -122,8 +128,10 @@ def run_m4b_merge(asin: str):
     audible = audible_helper.BookData(asin)
 
     try:
+        _update_status_message(book, "Fetching metadata from Audible…")
         metadata = audible.fetch_api_data(config.api_url)
 
+        _update_status_message(book, "Loading chapters…")
         chapters = audible.get_chapters()
         if setting and setting.chapter_source == 'source_file':
             chapters = None
@@ -136,13 +144,14 @@ def run_m4b_merge(asin: str):
             setting=setting,
         )
 
+        _update_status_message(book, "Merging audio files (this may take a while)…")
         logger.info(f"Processing {book.title}")
         m4b.run_merge()
     except Exception as e:
         logger.error(f"Error occured while merging '{input_data}: {e}'")
         book.status.status = StatusChoices.ERROR
         message = str(e) + "\n" + \
-            traceback.format_exc() if settings.DEBUG else e
+            traceback.format_exc() if settings.DEBUG else str(e)
         book.status.message = message
         book.status.save()
         return
@@ -154,6 +163,7 @@ def run_m4b_merge(asin: str):
         f"{book.title}.m4b"
     )
     book.status.status = StatusChoices.DONE
+    book.status.message = ""
     book.status.save()
     logger.info(f"{'-' * 15} Done processing {asin} {'-' * 15}")
 
