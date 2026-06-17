@@ -217,14 +217,10 @@ def run_m4b_merge(asin: str):
         logger.info("Book %s was cancelled during processing, skipping DONE", asin)
         return
 
-    book.dest_path = (
-        f"{m4b.book_output}/"
-        f"{metadata['authors'][0]}/"
-        f"{book.title}/"
-        f"{book.title}.m4b"
-    )
+    book.dest_path = f"{m4b.book_output}.m4b"
     book.status.status = StatusChoices.DONE
     book.status.save(update_fields=['status'])
+    book.save(update_fields=['dest_path'])
     logger.info(f"{'-' * 15} Done processing {asin} {'-' * 15}")
 
 

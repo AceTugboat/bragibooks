@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import type { Author, Book, Chapter, Narrator } from '../types';
@@ -326,9 +327,10 @@ const BookDetailPage: React.FC = () => {
                                 <div className="card mb-4">
                                     <div className="card-body">
                                         <h5 className="card-title">Description</h5>
-                                        <p className="card-text" style={{ whiteSpace: 'pre-wrap' }}>
-                                            {book.long_desc || book.short_desc}
-                                        </p>
+                                        <div
+                                            className="card-text"
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(book.long_desc || book.short_desc) }}
+                                        />
                                     </div>
                                 </div>
                             )}
