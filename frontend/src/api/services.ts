@@ -103,6 +103,10 @@ export const bookApi = {
     replaceCoverRefetch: async (id: string | number): Promise<void> => {
         await apiClient.post(`/api/books/${id}/cover/`, { mode: 'refetch' });
     },
+
+    cancel: async (id: string | number): Promise<void> => {
+        await apiClient.post(`/api/books/${id}/cancel/`);
+    },
 };
 
 // ASIN Search

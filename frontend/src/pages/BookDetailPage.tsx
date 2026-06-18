@@ -1,10 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import type { Author, Book, Chapter, Narrator } from '../types';
 import { StatusChoice } from '../types';
 import { bookApi, getErrorMessage } from '../api/services';
 import { useData } from '../context/DataContext';
+
+function parseChapterFile(text: string, filename: string): Chapter[] {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    const isCsv = filename.toLowerCase().endsWith('.csv');
+    const results: Chapter[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (isCsv) {
+            if (i === 0 && /^(timestamp|time|index)/i.test(line)) continue;
+            const commaIdx = line.indexOf(',');
+            if (commaIdx === -1) throw new Error(`Invalid CSV on line ${i + 1}: "${line}"`);
+            const timestamp = line.slice(0, commaIdx).trim().replace(/^"|"$/g, '');
+            const name = line.slice(commaIdx + 1).trim().replace(/^"|"$/g, '');
+            results.push({ index: results.length + 1, timestamp, name });
+        } else {
+            const spaceIdx = line.indexOf(' ');
+            if (spaceIdx === -1) throw new Error(`Invalid chapter line ${i + 1}: "${line}"`);
+            results.push({ index: results.length + 1, timestamp: line.slice(0, spaceIdx), name: line.slice(spaceIdx + 1).trim() });
+        }
+    }
+
+    if (results.length === 0) throw new Error('No chapters found in file');
+    return results;
+}
 
 const BookDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -26,6 +52,8 @@ const BookDetailPage: React.FC = () => {
     const [loadingChapters, setLoadingChapters] = useState(false);
     const [savingChapters, setSavingChapters] = useState(false);
     const [chapterError, setChapterError] = useState<string | null>(null);
+    const [importError, setImportError] = useState<string | null>(null);
+    const chapterFileInputRef = useRef<HTMLInputElement>(null);
     const [showCoverModal, setShowCoverModal] = useState(false);
     const [coverFile, setCoverFile] = useState<File | null>(null);
     const [replacingCover, setReplacingCover] = useState(false);
@@ -124,6 +152,25 @@ const BookDetailPage: React.FC = () => {
         } finally {
             setSavingChapters(false);
         }
+    };
+
+    const handleImportChapters = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = '';
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const parsed = parseChapterFile(evt.target?.result as string, file.name);
+                setChapters(parsed);
+                setImportError(null);
+                setChapterError(null);
+                setChaptersOpen(true);
+            } catch (err) {
+                setImportError(getErrorMessage(err));
+            }
+        };
+        reader.readAsText(file);
     };
 
     const handleReplaceUpload = async () => {
@@ -326,9 +373,10 @@ const BookDetailPage: React.FC = () => {
                                 <div className="card mb-4">
                                     <div className="card-body">
                                         <h5 className="card-title">Description</h5>
-                                        <p className="card-text" style={{ whiteSpace: 'pre-wrap' }}>
-                                            {book.long_desc || book.short_desc}
-                                        </p>
+                                        <div
+                                            className="card-text"
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(book.long_desc || book.short_desc) }}
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -438,54 +486,86 @@ const BookDetailPage: React.FC = () => {
                                         {chaptersOpen && (
                                             <div className="card-body">
                                                 {chapterError && (
-                                                    <div className="alert alert-danger">{chapterError}</div>
+                                                    <div className="alert alert-danger py-2">{chapterError}</div>
+                                                )}
+                                                {importError && (
+                                                    <div className="alert alert-danger py-2">{importError}</div>
                                                 )}
                                                 {loadingChapters ? (
                                                     <div className="text-center py-3"><div className="spinner-border" /></div>
                                                 ) : chapters.length === 0 ? (
-                                                    <p className="text-muted">No chapters found.</p>
+                                                    <p className="text-muted mb-3">No chapters found. Import a file to add them.</p>
                                                 ) : (
-                                                    <>
-                                                        <div className="table-responsive">
-                                                            <table className="table table-sm">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th style={{ width: 50 }}>#</th>
-                                                                        <th style={{ width: 130 }}>Timestamp</th>
-                                                                        <th>Name</th>
+                                                    <div className="table-responsive mb-3">
+                                                        <table className="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style={{ width: 40 }}>#</th>
+                                                                    <th style={{ width: 155 }}>Timestamp</th>
+                                                                    <th>Name</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {chapters.map((ch, i) => (
+                                                                    <tr key={i}>
+                                                                        <td className="text-muted align-middle">{ch.index}</td>
+                                                                        <td>
+                                                                            <input
+                                                                                type="text"
+                                                                                className="form-control form-control-sm font-monospace"
+                                                                                value={ch.timestamp}
+                                                                                onChange={e => setChapters(prev => {
+                                                                                    const next = [...prev];
+                                                                                    next[i] = { ...next[i], timestamp: e.target.value };
+                                                                                    return next;
+                                                                                })}
+                                                                            />
+                                                                        </td>
+                                                                        <td>
+                                                                            <input
+                                                                                type="text"
+                                                                                className="form-control form-control-sm"
+                                                                                value={ch.name}
+                                                                                onChange={e => setChapters(prev => {
+                                                                                    const next = [...prev];
+                                                                                    next[i] = { ...next[i], name: e.target.value };
+                                                                                    return next;
+                                                                                })}
+                                                                            />
+                                                                        </td>
                                                                     </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {chapters.map((ch, i) => (
-                                                                        <tr key={i}>
-                                                                            <td className="text-muted">{ch.index}</td>
-                                                                            <td><code className="small">{ch.timestamp}</code></td>
-                                                                            <td>
-                                                                                <input
-                                                                                    type="text"
-                                                                                    className="form-control form-control-sm"
-                                                                                    value={ch.name}
-                                                                                    onChange={e => setChapters(prev => {
-                                                                                        const next = [...prev];
-                                                                                        next[i] = { ...next[i], name: e.target.value };
-                                                                                        return next;
-                                                                                    })}
-                                                                                />
-                                                                            </td>
-                                                                        </tr>
-                                                                    ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                )}
+                                                {!loadingChapters && (
+                                                    <div className="d-flex gap-2 flex-wrap">
+                                                        {chapters.length > 0 && (
+                                                            <button
+                                                                className="btn btn-primary btn-sm"
+                                                                onClick={handleSaveChapters}
+                                                                disabled={savingChapters}
+                                                            >
+                                                                {savingChapters ? <span className="spinner-border spinner-border-sm me-1" role="status" /> : null}
+                                                                Save Chapters
+                                                            </button>
+                                                        )}
                                                         <button
-                                                            className="btn btn-primary btn-sm"
-                                                            onClick={handleSaveChapters}
-                                                            disabled={savingChapters}
+                                                            className="btn btn-outline-secondary btn-sm"
+                                                            onClick={() => chapterFileInputRef.current?.click()}
                                                         >
-                                                            {savingChapters ? <span className="spinner-border spinner-border-sm me-1" role="status" /> : null}
-                                                            Save Chapters
+                                                            <i className="fas fa-file-import me-1" />
+                                                            Import .txt / .csv
                                                         </button>
-                                                    </>
+                                                        <input
+                                                            ref={chapterFileInputRef}
+                                                            type="file"
+                                                            accept=".txt,.csv"
+                                                            className="d-none"
+                                                            onChange={handleImportChapters}
+                                                        />
+                                                    </div>
                                                 )}
                                             </div>
                                         )}

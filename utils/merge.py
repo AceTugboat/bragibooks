@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -18,9 +19,57 @@ logger = logging.getLogger(__name__)
 class BragiM4bMerge(m4b_helper.M4bMerge):
     """M4bMerge subclass that applies Bragi's Setting overrides."""
 
-    def __init__(self, input_data, metadata, original_path, chapters=None, setting=None):
+    def __init__(self, input_data, metadata, original_path, chapters=None, setting=None, book=None):
         super().__init__(input_data, metadata, original_path, chapters)
         self._setting = setting
+        self._book = book
+        self._log_buffer = []
+        self._last_flush = datetime.min
+
+    def _log_subprocess_line(self, line):
+        self._log_buffer.append(line)
+        now = datetime.now()
+        if (now - self._last_flush).total_seconds() >= 2:
+            self._flush_log_buffer()
+            self._last_flush = now
+
+    def _flush_log_buffer(self):
+        if not self._log_buffer or not self._book:
+            self._log_buffer = []
+            return
+        chunk = '\n'.join(self._log_buffer)
+        self._book.status.message = (self._book.status.message + '\n' + chunk).lstrip('\n')
+        self._book.status.save(update_fields=['message'])
+        self._log_buffer = []
+
+    def run_merge(self):
+        original_call = subprocess.call
+
+        def capturing_call(args, **kwargs):
+            logger.info(f"M4B command: {args}")
+            kwargs.pop('stdout', None)
+            kwargs.pop('stderr', None)
+            proc = subprocess.Popen(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                **kwargs,
+            )
+            for line in proc.stdout:
+                line = line.rstrip('\n')
+                if line:
+                    self._log_subprocess_line(line)
+            proc.wait()
+            self._flush_log_buffer()
+            return proc.returncode
+
+        subprocess.call = capturing_call
+        try:
+            super().run_merge()
+        finally:
+            subprocess.call = original_call
+            self._flush_log_buffer()
 
     def prepare_command_args(self):
         super().prepare_command_args()
@@ -79,7 +128,10 @@ class BragiM4bMerge(m4b_helper.M4bMerge):
 
 
 def _update_status_message(book, message):
-    book.status.message = message
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%H:%M:%S')
+    line = f"[{timestamp}] {message}"
+    book.status.message = (book.status.message + '\n' + line).lstrip('\n')
     book.status.save(update_fields=['message'])
 
 
@@ -111,6 +163,8 @@ def run_m4b_merge(asin: str):
     logger.debug(f'Using output format: {config.path_format}')
 
     book = Book.objects.get(asin=asin)
+    book.status.message = ""
+    book.status.save(update_fields=['message'])
     setting = Setting.load()
     logger.info(
         f"{'-' * 15} Starting to process {asin}: {book.title} {'-' * 15}")
@@ -142,6 +196,7 @@ def run_m4b_merge(asin: str):
             Path(book.src_path),
             chapters,
             setting=setting,
+            book=book,
         )
 
         _update_status_message(book, "Merging audio files (this may take a while)…")
@@ -156,15 +211,16 @@ def run_m4b_merge(asin: str):
         book.status.save()
         return
 
-    book.dest_path = (
-        f"{m4b.book_output}/"
-        f"{metadata['authors'][0]}/"
-        f"{book.title}/"
-        f"{book.title}.m4b"
-    )
+    # Re-fetch status in case user cancelled while m4b-tool was running
+    book.status.refresh_from_db()
+    if book.status.status != StatusChoices.PROCESSING:
+        logger.info("Book %s was cancelled during processing, skipping DONE", asin)
+        return
+
+    book.dest_path = f"{m4b.book_output}.m4b"
     book.status.status = StatusChoices.DONE
-    book.status.message = ""
-    book.status.save()
+    book.status.save(update_fields=['status'])
+    book.save(update_fields=['dest_path'])
     logger.info(f"{'-' * 15} Done processing {asin} {'-' * 15}")
 
 
