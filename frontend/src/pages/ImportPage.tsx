@@ -172,7 +172,7 @@ const ImportPage: React.FC = () => {
 
     // ── Step 2: ASIN match cards ─────────────────────────────────────
     return (
-        <form onSubmit={handleSubmit} style={{ paddingBottom: '80px' }}>
+        <form onSubmit={handleSubmit} style={{ paddingBottom: '72px' }}>
             <div className="d-flex align-items-center gap-2 mb-4">
                 <button
                     type="button"

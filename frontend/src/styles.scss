@@ -552,6 +552,7 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
 .import-file-tree {
     flex: 1;
     overflow-y: auto;
+    padding-bottom: 72px; // clear fixed action bar
 }
 
 // Import selection panel (Step 1 desktop sidebar)
@@ -563,28 +564,24 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
 }
 
 // Sticky action bar (shared by Step 1 + Step 2)
+// Fixed at all viewport sizes — always flush to the bottom of the viewport
 .import-action-bar {
-    position: sticky;
+    position: fixed;
     bottom: 0;
-    left: 0;
+    left: var(--sidebar-width);
     right: 0;
     background-color: var(--action-bar-bg);
     border-top: 1px solid var(--action-bar-border);
     box-shadow: var(--action-bar-shadow);
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-3) var(--space-5);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
-    z-index: 50;
+    z-index: 200;
 
     @media (max-width: 768px) {
-        position: fixed;
-        bottom: 0;
         left: 0;
-        right: 0;
-        z-index: 200;
-        padding: var(--space-3) var(--space-4);
     }
 }
 
@@ -594,7 +591,7 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
     font-weight: var(--font-weight-medium);
 }
 
-// ---- Form controls dark mode support -----------------------
+// ---- Form controls -----------------------------------------
 
 .form-control,
 .form-select {
@@ -616,6 +613,41 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
     background-color: var(--color-bg-tertiary);
     border-color: var(--color-border-primary);
     color: var(--color-text-secondary);
+}
+
+// Helper/hint text under form controls
+.form-text {
+    color: var(--color-text-tertiary);
+}
+
+// Radios and checkboxes — visible border + green accent when checked
+.form-check-input {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-primary);
+
+    &:checked {
+        background-color: var(--color-success);
+        border-color: var(--color-success);
+    }
+
+    &:focus {
+        border-color: var(--color-border-focus);
+        box-shadow: 0 0 0 0.25rem rgba($raw-gold, 0.20);
+    }
+}
+
+// Switch toggle — unchecked track must be visible on dark surfaces
+.form-switch .form-check-input {
+    background-color: var(--color-border-primary); // visible track when off
+
+    &:checked {
+        background-color: var(--color-success);
+        border-color: var(--color-success);
+    }
+}
+
+.form-check-label {
+    color: var(--color-text-primary);
 }
 
 // ---- List groups -------------------------------------------
@@ -696,8 +728,27 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
 }
 
 // ---- Light mode explicit reset (opt-in) --------------------
+// Bootstrap compiles with $body-color: #E2E8F0 (dark-first), so Bootstrap's
+// --bs-body-color and friends are light by default. Override them here.
 
 [data-theme="light"] {
+    // Bootstrap CSS variable overrides — must come first so components pick them up
+    --bs-body-color:           #{$raw-neutral-900};
+    --bs-body-color-rgb:       33, 37, 41;
+    --bs-body-bg:              #{$raw-neutral-0};
+    --bs-body-bg-rgb:          255, 255, 255;
+    --bs-emphasis-color:       #{$raw-neutral-900};
+    --bs-secondary-color:      #{$raw-neutral-700};
+    --bs-secondary-color-rgb:  73, 80, 87;
+    --bs-tertiary-color:       #{$raw-neutral-600};
+    --bs-tertiary-color-rgb:   108, 117, 125;
+    --bs-link-color:           #{$raw-burgundy};
+    --bs-card-bg:              #{$raw-neutral-0};
+    --bs-card-border-color:    #{$raw-neutral-200};
+    --bs-card-cap-bg:          rgba(#{$raw-gold}, 0.05);
+    --bs-border-color:         #{$raw-neutral-200};
+    --bs-border-color-translucent: rgba(0, 0, 0, 0.175);
+
     background-color: $raw-neutral-0;
     color: $raw-neutral-900;
 
@@ -708,9 +759,25 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
 
     .main-content {
         background-color: $raw-neutral-0;
+        color: $raw-neutral-900;
     }
 
-    // Reset form controls to light defaults
+    // Typography — ensure all text is dark on light backgrounds
+    p, span, div, li, td, th, label, small,
+    h1, h2, h3, h4, h5, h6 {
+        color: inherit;
+    }
+
+    .text-muted,
+    .form-text {
+        color: $raw-neutral-600 !important;
+    }
+
+    .form-label {
+        color: $raw-neutral-900;
+    }
+
+    // Form controls
     .form-control,
     .form-select {
         background-color: $raw-neutral-0;
@@ -719,11 +786,10 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
 
         &:focus {
             background-color: $raw-neutral-0;
+            color: $raw-neutral-900;
         }
 
-        &::placeholder {
-            color: $raw-neutral-600;
-        }
+        &::placeholder { color: $raw-neutral-600; }
     }
 
     .input-group-text {
@@ -732,21 +798,121 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
         color: $raw-neutral-700;
     }
 
+    // Radios and switches on light background
+    .form-check-input {
+        background-color: $raw-neutral-0;
+        border-color: $raw-neutral-300;
+    }
+
+    .form-switch .form-check-input {
+        background-color: $raw-neutral-300; // visible grey track when off
+    }
+
+    .form-check-label {
+        color: $raw-neutral-900;
+    }
+
+    // Cards
+    .card {
+        background-color: $raw-neutral-0;
+        border-color: $raw-neutral-200;
+        color: $raw-neutral-900;
+    }
+
+    .card-header {
+        background-color: rgba($raw-gold, 0.05);
+        border-bottom-color: $raw-neutral-200;
+        color: $raw-neutral-900;
+    }
+
+    .card-body {
+        background-color: $raw-neutral-0;
+        color: $raw-neutral-900;
+    }
+
+    // List groups
     .list-group-item {
         background-color: $raw-neutral-0;
         border-color: $raw-neutral-200;
         color: $raw-neutral-900;
     }
 
-    .modal-content {
-        background-color: $raw-neutral-0;
+    // Tables
+    .table {
+        --bs-table-color:        #{$raw-neutral-900};
+        --bs-table-bg:           transparent;
+        --bs-table-border-color: #{$raw-neutral-200};
+        --bs-table-striped-bg:   #{$raw-neutral-50};
+        --bs-table-hover-bg:     #{$raw-neutral-50};
+        color: $raw-neutral-900;
+        border-color: $raw-neutral-200;
+
+        thead th {
+            background-color: $raw-neutral-50;
+            color: $raw-neutral-900;
+        }
     }
 
-    .table {
-        --bs-table-color: #{$raw-neutral-900};
-        --bs-table-bg: transparent;
-        --bs-table-border-color: #{$raw-neutral-200};
+    // Modals
+    .modal-content {
+        background-color: $raw-neutral-0;
+        border-color: $raw-neutral-200;
         color: $raw-neutral-900;
+    }
+
+    .modal-header,
+    .modal-footer {
+        border-color: $raw-neutral-200;
+    }
+
+    // Alerts
+    .alert-danger {
+        background-color: rgba($raw-burgundy, 0.08);
+        border-color: $raw-burgundy;
+        color: $raw-burgundy;
+    }
+
+    .alert-warning {
+        background-color: rgba($raw-gold, 0.10);
+        border-color: $raw-gold-accessible;
+        color: $raw-gold-accessible;
+    }
+
+    .alert-success {
+        background-color: rgba($raw-green, 0.08);
+        border-color: $raw-green;
+        color: $raw-green;
+    }
+
+    // Pagination
+    .pagination-button {
+        background-color: $raw-neutral-0;
+        border-color: $raw-neutral-200;
+        color: $raw-neutral-900;
+    }
+
+    // Page header
+    .page-header {
+        background-color: $raw-neutral-0;
+        border-bottom-color: $raw-neutral-200;
+    }
+
+    // Import action bar
+    .import-action-bar {
+        background-color: $raw-neutral-0;
+        border-top-color: $raw-neutral-200;
+    }
+
+    // Outline secondary buttons
+    .btn-outline-secondary {
+        border-color: $raw-neutral-300;
+        color: $raw-neutral-700;
+
+        &:hover {
+            background-color: $raw-neutral-100;
+            border-color: $raw-neutral-300;
+            color: $raw-neutral-900;
+        }
     }
 }
 
