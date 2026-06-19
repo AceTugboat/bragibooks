@@ -45,10 +45,31 @@ export const directoryApi = {
     },
 };
 
+export interface LibraryParams {
+    page?: number;
+    page_size?: number;
+    sort?: 'title' | 'release_date' | 'author' | 'recently_added';
+    order?: 'asc' | 'desc';
+    q?: string;
+}
+
+export interface LibraryPage {
+    count: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+    results: Book[];
+}
+
 // Book operations
 export const bookApi = {
     getAll: async (): Promise<{ done: Book[]; processing: Book[]; error: Book[] }> => {
         const response = await apiClient.get('/api/books/');
+        return response.data;
+    },
+
+    getLibrary: async (params: LibraryParams = {}): Promise<LibraryPage> => {
+        const response = await apiClient.get<LibraryPage>('/api/books/library/', { params });
         return response.data;
     },
 

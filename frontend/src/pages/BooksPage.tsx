@@ -1,17 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import LibraryBookCard from '../components/LibraryBookCard';
 import Pagination from '../components/Pagination';
-import { useData } from '../context/DataContext';
+import { bookApi } from '../api/services';
+import type { LibraryPage } from '../api/services';
 
 type SortOption = 'title' | 'release_date' | 'author' | 'recently_added';
 
+const DEFAULT_ORDER: Record<SortOption, 'asc' | 'desc'> = {
+    title: 'asc',
+    release_date: 'desc',
+    author: 'asc',
+    recently_added: 'desc',
+};
+
 const BooksPage: React.FC = () => {
     const location = useLocation();
-    const { books, loadingBooks, errorBooks } = useData();
 
-    // Filter/Sort/Pagination state - restore from location.state if available
     const [searchQuery, setSearchQuery] = useState(
         (location.state as any)?.searchQuery || ''
     );
@@ -25,62 +31,66 @@ const BooksPage: React.FC = () => {
         (location.state as any)?.currentPage || 1
     );
     const [searchFocused, setSearchFocused] = useState(false);
+    const [libraryData, setLibraryData] = useState<LibraryPage | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Scroll to top when page changes
+    const prevSearchRef = useRef(searchQuery);
+
+    const fetchLibrary = useCallback(async (params: {
+        page: number; page_size: number; sort: SortOption;
+        order: 'asc' | 'desc'; q: string;
+    }) => {
+        try {
+            setLoading(true);
+            const data = await bookApi.getLibrary(params);
+            setLibraryData(data);
+            setError(null);
+        } catch (err: any) {
+            setError(err?.response?.data?.error || err?.message || 'Failed to load library');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        const searchChanged = prevSearchRef.current !== searchQuery;
+        prevSearchRef.current = searchQuery;
+
+        if (searchChanged) {
+            const timer = setTimeout(() => {
+                setCurrentPage(1);
+                fetchLibrary({
+                    page: 1,
+                    page_size: itemsPerPage,
+                    sort: sortBy,
+                    order: DEFAULT_ORDER[sortBy],
+                    q: searchQuery,
+                });
+            }, 300);
+            return () => clearTimeout(timer);
+        } else {
+            fetchLibrary({
+                page: currentPage,
+                page_size: itemsPerPage,
+                sort: sortBy,
+                order: DEFAULT_ORDER[sortBy],
+                q: searchQuery,
+            });
+        }
+    }, [searchQuery, sortBy, itemsPerPage, currentPage]);
+
+    // Reset to page 1 when sort or page size changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [sortBy, itemsPerPage]);
+
+    // Scroll to top on page change
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [currentPage]);
 
-    // Filter and sort books
-    const filteredAndSortedBooks = useMemo(() => {
-        let result = [...(books.done ?? [])];
-
-        // Filter by search query
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter(book => {
-                const authors = book.authors.map(a => `${a.first_name} ${a.last_name}`.toLowerCase()).join(' ');
-                return (
-                    book.title.toLowerCase().includes(query) ||
-                    authors.includes(query)
-                );
-            });
-        }
-
-        // Sort books
-        result.sort((a, b) => {
-            switch (sortBy) {
-                case 'title':
-                    return a.title.localeCompare(b.title);
-                case 'release_date':
-                    return new Date(b.release_date).getTime() - new Date(a.release_date).getTime();
-                case 'author':
-                    const authorA = a.authors[0] ? `${a.authors[0].last_name} ${a.authors[0].first_name}` : '';
-                    const authorB = b.authors[0] ? `${b.authors[0].last_name} ${b.authors[0].first_name}` : '';
-                    return authorA.localeCompare(authorB);
-                case 'recently_added':
-                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-                default:
-                    return 0;
-            }
-        });
-
-        return result;
-    }, [books.done, searchQuery, sortBy]);
-
-    // Paginate books
-    const totalPages = Math.ceil(filteredAndSortedBooks.length / itemsPerPage);
-    const paginatedBooks = filteredAndSortedBooks.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    // Reset to page 1 when filters change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery, sortBy, itemsPerPage]);
-
-    if (loadingBooks) {
+    if (loading && !libraryData) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
                 <div className="spinner-border text-primary" role="status">
@@ -90,15 +100,15 @@ const BooksPage: React.FC = () => {
         );
     }
 
-    if (errorBooks) {
+    if (error) {
         return (
             <div className="alert alert-danger m-4" role="alert">
-                {errorBooks}
+                {error}
             </div>
         );
     }
 
-    if (books.done.length === 0) {
+    if (libraryData && libraryData.count === 0 && !searchQuery) {
         return (
             <div className="library-page">
                 <PageHeader title="My Library" />
@@ -114,9 +124,13 @@ const BooksPage: React.FC = () => {
         );
     }
 
+    const totalPages = libraryData?.total_pages ?? 1;
+    const books = libraryData?.results ?? [];
+    const totalCount = libraryData?.count ?? 0;
+
     return (
         <div className="library-page">
-            <PageHeader title={`My Library (${filteredAndSortedBooks.length})`}>
+            <PageHeader title={`My Library (${totalCount})`}>
                 <div className="library-controls">
                     {/* Search Bar - expandable on focus */}
                     <div className={`library-search ${searchFocused ? 'focused' : ''}`}>
@@ -140,7 +154,7 @@ const BooksPage: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Sort Icon (Unified for Mobile & Desktop) */}
+                    {/* Sort Icon */}
                     <div className="sort-wrapper ms-2" title="Sort books">
                         <i className="fa-solid fa-arrow-down-short-wide text-gold"></i>
                         <select
@@ -155,16 +169,14 @@ const BooksPage: React.FC = () => {
                             <option value="recently_added">Recently Added</option>
                         </select>
                     </div>
-
-
                 </div>
             </PageHeader>
 
             {/* Library Grid */}
-            {paginatedBooks.length > 0 ? (
+            {books.length > 0 ? (
                 <>
                     <div className="library-grid">
-                        {paginatedBooks.map(book => (
+                        {books.map(book => (
                             <LibraryBookCard
                                 key={book.id}
                                 book={book}

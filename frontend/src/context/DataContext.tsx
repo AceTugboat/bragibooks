@@ -58,16 +58,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // Detect PROCESSING → DONE or ERROR transitions
             const prevIds = new Set(prevProcessingRef.current.map(b => b.id));
             const prevById = new Map(prevProcessingRef.current.map(b => [b.id, b]));
-            const nowDoneIds = new Set(data.done.map(b => b.id));
+            const nowProcessingIds = new Set(data.processing.map(b => b.id));
             const nowErrorIds = new Set(data.error.map(b => b.id));
 
             const newToasts: Toast[] = [];
             for (const id of prevIds) {
                 const prev = prevById.get(id)!;
-                if (nowDoneIds.has(id)) {
-                    newToasts.push({ id: ++toastCounter, type: 'done', bookId: id, title: prev.title });
-                } else if (nowErrorIds.has(id)) {
+                if (nowErrorIds.has(id)) {
                     newToasts.push({ id: ++toastCounter, type: 'error', bookId: id, title: prev.title });
+                } else if (!nowProcessingIds.has(id)) {
+                    // Was processing, not in error → must be done
+                    newToasts.push({ id: ++toastCounter, type: 'done', bookId: id, title: prev.title });
                 }
             }
             if (newToasts.length > 0) {
@@ -110,11 +111,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         refreshSettings();
     }, []);
 
-    // Poll every 10s while books are processing
+    // When processing empties, do one follow-up fetch after a short delay so
+    // books that just finished (backend still committing) land in recently completed.
     useEffect(() => {
-        if (books.processing.length > 0) {
-            const interval = setInterval(refreshBooks, 10_000);
-            return () => clearInterval(interval);
+        const prev = prevProcessingLengthRef.current;
+        prevProcessingLengthRef.current = books.processing.length;
+        if (prev > 0 && books.processing.length === 0) {
+            const timer = setTimeout(refreshBooks, 1500);
+            return () => clearTimeout(timer);
         }
     }, [books.processing.length, refreshBooks]);
 

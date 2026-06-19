@@ -6,7 +6,7 @@ from .api.auth import (
     PasskeyLoginBeginAPI, PasskeyLoginCompleteAPI,
     PasskeyRegisterBeginAPI, PasskeyRegisterCompleteAPI,
 )
-from .api.books import BookCancelAPI, BookDetailAPI, BookMetadataAPI, BookReprocessAPI, BooksListAPI, BookChaptersAPI, BookCoverAPI
+from .api.books import BookCancelAPI, BookDetailAPI, BookMetadataAPI, BookReprocessAPI, BooksListAPI, BookChaptersAPI, BookCoverAPI, LibraryBooksAPI
 from .api.config import SettingsAPI, SettingsVerifyAPI, VersionsAPI
 from .api.import_pipeline import AsinSearchAPI, DirectoryListAPI, ImportStartAPI, MatchAPI
 from .api.users import UserDetailAPI, UsersListAPI
@@ -29,6 +29,7 @@ api_patterns = [
     path('api/auth/passkeys/<int:pk>/', PasskeyDeleteAPI.as_view(), name='api-passkey-delete'),
 
     # Books
+    path('api/books/library/', LibraryBooksAPI.as_view(), name='api-books-library'),
     path('api/books/', BooksListAPI.as_view(), name='api-books'),
     path('api/books/<int:pk>/', BookDetailAPI.as_view(), name='api-book-detail'),
     path('api/books/<int:pk>/cancel/', BookCancelAPI.as_view(), name='api-book-cancel'),

@@ -5,6 +5,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
+from django.db import models
+from django.db.models import Min
 from django.http import JsonResponse
 from django.views import View
 
@@ -85,9 +87,6 @@ def serialize_book(book: Book) -> dict:
 class BooksListAPI(JsonLoginRequiredMixin, View):
     def get(self, request):
         try:
-            done_books = Book.objects.filter(
-                status__status=StatusChoices.DONE
-            ).order_by('-created_at')
             processing_books = Book.objects.filter(
                 status__status=StatusChoices.PROCESSING
             ).order_by('-created_at')
@@ -95,13 +94,64 @@ class BooksListAPI(JsonLoginRequiredMixin, View):
                 status__status=StatusChoices.ERROR
             ).order_by('-created_at')
             return JsonResponse({
-                'done': [serialize_book(b) for b in done_books],
+                'done': [],
                 'processing': [serialize_book(b) for b in processing_books],
                 'error': [serialize_book(b) for b in error_books],
             })
         except Exception as e:
             logger.error("Error fetching books: %s", e)
             return JsonResponse({'error': str(e)}, status=500)
+
+
+class LibraryBooksAPI(JsonLoginRequiredMixin, View):
+    SORT_MAP = {
+        'title': 'title',
+        'release_date': 'release_date',
+        'author': 'author_last',
+        'recently_added': 'created_at',
+    }
+
+    def get(self, request):
+        try:
+            page = max(1, int(request.GET.get('page', 1)))
+            page_size = min(100, max(1, int(request.GET.get('page_size', 25))))
+            sort = request.GET.get('sort', 'title')
+            order = request.GET.get('order', 'asc')
+            q = request.GET.get('q', '').strip()
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid query parameters'}, status=400)
+
+        sort_field = self.SORT_MAP.get(sort, 'title')
+        order_prefix = '-' if order == 'desc' else ''
+
+        books = Book.objects.filter(status__status=StatusChoices.DONE)
+
+        if q:
+            books = books.filter(
+                models.Q(title__icontains=q) |
+                models.Q(authors__last_name__icontains=q) |
+                models.Q(authors__first_name__icontains=q)
+            ).distinct()
+
+        if sort_field == 'author_last':
+            books = books.annotate(author_last=Min('authors__last_name'))
+
+        books = books.order_by(f'{order_prefix}{sort_field}')
+
+        count = books.count()
+        total_pages = max(1, (count + page_size - 1) // page_size)
+        page = min(page, total_pages)
+
+        offset = (page - 1) * page_size
+        page_books = list(books[offset:offset + page_size])
+
+        return JsonResponse({
+            'count': count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': total_pages,
+            'results': [serialize_book(b) for b in page_books],
+        })
 
 
 class BookDetailAPI(JsonLoginRequiredMixin, View):
