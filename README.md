@@ -1,6 +1,6 @@
 <p align="center">
   <a href="" rel="noopener">
-  <img width=200px height=200px src="../assets/logos/logo.png?raw=true" alt="Project logo"></a>
+  <img width=200px height=200px src="docs/BragiLogo.png?raw=true" alt="Project logo"></a>
 </p>
 
 <h3 align="center">Bragibooks</h3>
@@ -41,6 +41,20 @@ The workflow is a simple 3-step process:
 1. **Select input** — browse your audio files and select what you want to process
 2. **Match ASIN** — Bragibooks auto-searches Audible for metadata. If the match is wrong, use the custom search to find the correct title
 3. **Process** — submit for processing and wait. This runs in the background and can take anywhere from seconds to hours depending on file size. Track progress on the Processing page
+
+Login Page            |  Import Selection
+:-------------------------:|:-------------------------:
+![Login Page](docs/screenshots/Login_Page.png) | ![Import Page](docs/screenshots/Import_Page.png) 
+
+Audiobook Match            |  Processing Queue
+:-------------------------:|:-------------------------:
+![Match Page](docs/screenshots/Audiobook_Match_Page.png) | ![Processing Page](docs/screenshots/Processing_Queue_Page.png)
+
+Library            |  Book Detail
+:-------------------------:|:-------------------------:
+![Library Page](docs/screenshots/Library_Page.png) | ![Book Detail Page](docs/screenshots/Book_Detail_Page.png)
+
+
 
 ## Getting Started <a name = "getting_started"></a>
 
