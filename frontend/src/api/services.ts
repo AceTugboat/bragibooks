@@ -87,8 +87,9 @@ export const bookApi = {
         return response.data;
     },
 
-    saveChapters: async (id: string | number, chapters: Chapter[]): Promise<void> => {
-        await apiClient.put(`/api/books/${id}/chapters/`, chapters);
+    saveChapters: async (id: string | number, chapters: Chapter[]): Promise<{ message?: string } | void> => {
+        const res = await apiClient.put<{ saved?: boolean; embedded?: boolean; message?: string }>(`/api/books/${id}/chapters/`, chapters);
+        return res.data;
     },
 
     replaceCoverUpload: async (id: string | number, file: File): Promise<void> => {

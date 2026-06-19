@@ -239,12 +239,8 @@ class BookChaptersAPI(JsonLoginRequiredMixin, View):
         except Book.DoesNotExist:
             return JsonResponse({'error': 'Book not found'}, status=404)
 
-        if not book.dest_path or not Path(book.dest_path).exists():
-            return JsonResponse({'error': 'Output file not found on disk'}, status=400)
-
-        mp4chaps = shutil.which('mp4chaps')
-        if not mp4chaps:
-            return JsonResponse({'error': 'mp4chaps not available'}, status=503)
+        if not book.dest_path:
+            return JsonResponse({'error': 'Book has no destination path set'}, status=400)
 
         try:
             chapters = json.loads(request.body)
@@ -252,9 +248,20 @@ class BookChaptersAPI(JsonLoginRequiredMixin, View):
             return JsonResponse({'error': 'Invalid JSON body'}, status=400)
 
         chapter_file = self._chapter_file(book)
+        chapter_file.parent.mkdir(parents=True, exist_ok=True)
         with open(chapter_file, 'w') as f:
             for ch in chapters:
                 f.write(f"{ch['timestamp']} {ch['name']}\n")
+
+        dest = Path(book.dest_path)
+        if not dest.exists():
+            return JsonResponse({'saved': True, 'embedded': False,
+                                 'message': 'Chapter file saved. Chapters will be embedded when the output file is available.'})
+
+        mp4chaps = shutil.which('mp4chaps')
+        if not mp4chaps:
+            return JsonResponse({'saved': True, 'embedded': False,
+                                 'message': 'Chapter file saved. mp4chaps not available for embedding.'})
 
         try:
             result = subprocess.run([mp4chaps, '-i', book.dest_path], capture_output=True, timeout=60)

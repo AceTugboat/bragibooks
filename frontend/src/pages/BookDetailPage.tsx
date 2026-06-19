@@ -53,6 +53,7 @@ const BookDetailPage: React.FC = () => {
     const [savingChapters, setSavingChapters] = useState(false);
     const [chapterError, setChapterError] = useState<string | null>(null);
     const [importError, setImportError] = useState<string | null>(null);
+    const [chapterSaveMessage, setChapterSaveMessage] = useState<string | null>(null);
     const [importChapterError, setImportChapterError] = useState<string | null>(null);
     const chapterFileInputRef = useRef<HTMLInputElement>(null);
     const [showCoverModal, setShowCoverModal] = useState(false);
@@ -145,9 +146,11 @@ const BookDetailPage: React.FC = () => {
     const handleSaveChapters = async () => {
         if (!id) return;
         setSavingChapters(true);
+        setChapterSaveMessage(null);
         try {
-            await bookApi.saveChapters(id, chapters);
+            const result = await bookApi.saveChapters(id, chapters);
             setChapterError(null);
+            if (result?.message) setChapterSaveMessage(result.message);
         } catch (err) {
             setChapterError(getErrorMessage(err));
         } finally {
@@ -495,6 +498,9 @@ const BookDetailPage: React.FC = () => {
                                                 )}
                                                 {importError && (
                                                     <div className="alert alert-danger py-2">{importError}</div>
+                                                )}
+                                                {chapterSaveMessage && (
+                                                    <div className="alert alert-info">{chapterSaveMessage}</div>
                                                 )}
                                                 {importChapterError && (
                                                     <div className="alert alert-warning">{importChapterError}</div>
