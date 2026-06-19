@@ -55,7 +55,6 @@ const BookDetailPage: React.FC = () => {
     const [chapterError, setChapterError] = useState<string | null>(null);
     const [importError, setImportError] = useState<string | null>(null);
     const [chapterSaveMessage, setChapterSaveMessage] = useState<string | null>(null);
-    const [importChapterError, setImportChapterError] = useState<string | null>(null);
     const chapterFileInputRef = useRef<HTMLInputElement>(null);
     const [showCoverModal, setShowCoverModal] = useState(false);
     const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -535,9 +534,6 @@ const BookDetailPage: React.FC = () => {
                                                 )}
                                                 {chapterSaveMessage && (
                                                     <div className="alert alert-info">{chapterSaveMessage}</div>
-                                                )}
-                                                {importChapterError && (
-                                                    <div className="alert alert-warning">{importChapterError}</div>
                                                 )}
                                                 {loadingChapters ? (
                                                     <div className="text-center py-3"><div className="spinner-border" /></div>

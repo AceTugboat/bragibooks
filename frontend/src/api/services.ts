@@ -76,7 +76,7 @@ export const bookApi = {
 
     updateMetadata: async (id: string | number, data: {
         title?: string; author?: string; narrator?: string;
-        year?: number; description?: string; genre?: string;
+        year?: number; description?: string; genre?: string; series?: string;
     }): Promise<Book> => {
         const response = await apiClient.put<Book>(`/api/books/${id}/metadata/`, data);
         return response.data;
