@@ -41,11 +41,12 @@ const BookDetailPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [deleteFiles, setDeleteFiles] = useState(false);
     const [showReprocessModal, setShowReprocessModal] = useState(false);
     const [reprocessAsin, setReprocessAsin] = useState('');
     const [reprocessing, setReprocessing] = useState(false);
     const [showMetaModal, setShowMetaModal] = useState(false);
-    const [metaForm, setMetaForm] = useState({ title: '', author: '', narrator: '', year: '', description: '', genre: '' });
+    const [metaForm, setMetaForm] = useState({ title: '', author: '', narrator: '', year: '', series: '', genre: '', description: '' });
     const [savingMeta, setSavingMeta] = useState(false);
     const [chapters, setChapters] = useState<Chapter[]>([]);
     const [chaptersOpen, setChaptersOpen] = useState(false);
@@ -89,7 +90,7 @@ const BookDetailPage: React.FC = () => {
     const handleDelete = async () => {
         try {
             setDeleting(true);
-            await bookApi.delete(id!);
+            await bookApi.delete(id!, deleteFiles);
             await refreshBooks();
             navigate('/');
         } catch (err) {
@@ -97,6 +98,7 @@ const BookDetailPage: React.FC = () => {
             setShowDeleteModal(false);
         } finally {
             setDeleting(false);
+            setDeleteFiles(false);
         }
     };
 
@@ -121,8 +123,9 @@ const BookDetailPage: React.FC = () => {
             author: book?.authors?.map((a: Author) => `${a.first_name} ${a.last_name}`).join(', ') ?? '',
             narrator: book?.narrators?.map((n: Narrator) => `${n.first_name} ${n.last_name}`).join(', ') ?? '',
             year: '',
-            description: book?.long_desc ?? book?.short_desc ?? '',
+            series: book?.series ?? '',
             genre: '',
+            description: book?.long_desc ?? book?.short_desc ?? '',
         });
         setShowMetaModal(true);
     };
@@ -230,8 +233,9 @@ const BookDetailPage: React.FC = () => {
                 author: metaForm.author || undefined,
                 narrator: metaForm.narrator || undefined,
                 year: metaForm.year ? parseInt(metaForm.year, 10) : undefined,
-                description: metaForm.description || undefined,
+                series: metaForm.series || undefined,
                 genre: metaForm.genre || undefined,
+                description: metaForm.description || undefined,
             });
             setBook(updated);
             setShowMetaModal(false);
@@ -278,6 +282,12 @@ const BookDetailPage: React.FC = () => {
 
     const formatNarrators = (narrators: typeof book.narrators): string => {
         return narrators.map(n => `${n.first_name} ${n.last_name}`).join(', ');
+    };
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
     };
 
     return (
@@ -374,6 +384,12 @@ const BookDetailPage: React.FC = () => {
                                         <strong>Series:</strong> {book.series}
                                     </p>
                                 )}
+                                {!book.output_file_exists && book.dest_path && (
+                                    <div className="alert alert-warning py-2 px-3 mt-2 mb-0 d-flex align-items-center gap-2">
+                                        <i className="fas fa-triangle-exclamation" />
+                                        <span className="small">Output file <code>{book.dest_path.split('/').pop()}</code> was not found on disk.</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Description */}
@@ -406,6 +422,11 @@ const BookDetailPage: React.FC = () => {
                                                 <li className="mb-2">
                                                     <strong>Runtime:</strong> {formatRuntime(book.runtime_length_minutes)}
                                                 </li>
+                                                {book.audio_bitrate && (
+                                                    <li className="mb-2">
+                                                        <strong>Bitrate:</strong> {book.audio_bitrate} kbps
+                                                    </li>
+                                                )}
                                                 <li className="mb-2">
                                                     <strong>Converted:</strong> {book.converted ? 'Yes' : 'No'}
                                                 </li>
@@ -443,6 +464,11 @@ const BookDetailPage: React.FC = () => {
                                                         <strong>ASIN:</strong> {book.asin}
                                                     </li>
                                                 )}
+                                                {book.series && (
+                                                    <li className="mb-2">
+                                                        <strong>Series:</strong> {book.series}
+                                                    </li>
+                                                )}
                                             </ul>
                                         </div>
                                     </div>
@@ -465,6 +491,14 @@ const BookDetailPage: React.FC = () => {
                                                 {book.dest_path && (
                                                     <li className="mb-2">
                                                         <strong>Destination Path:</strong> <code className="text-break">{book.dest_path}</code>
+                                                        {!book.output_file_exists && (
+                                                            <span className="badge bg-warning text-dark ms-2">File missing</span>
+                                                        )}
+                                                    </li>
+                                                )}
+                                                {book.file_size != null && (
+                                                    <li className="mb-2">
+                                                        <strong>File Size:</strong> {formatFileSize(book.file_size)}
                                                     </li>
                                                 )}
                                                 <li className="mb-2">
@@ -646,13 +680,29 @@ const BookDetailPage: React.FC = () => {
                             </div>
                             <div className="modal-body">
                                 <p>Are you sure you want to delete <strong>{book.title}</strong>?</p>
-                                <p className="text-muted mb-0">This removes the record from Bragibooks but does not delete audio files from disk.</p>
+                                <div className="form-check mb-3">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id="deleteFilesCheck"
+                                        checked={deleteFiles}
+                                        onChange={e => setDeleteFiles(e.target.checked)}
+                                    />
+                                    <label className="form-check-label" htmlFor="deleteFilesCheck">
+                                        Also delete the output folder and all its files from disk
+                                    </label>
+                                </div>
+                                <p className="text-muted small mb-0">
+                                    {deleteFiles
+                                        ? <><i className="fas fa-triangle-exclamation me-1 text-warning" />This will permanently delete the output folder from disk and cannot be undone.</>
+                                        : 'Only the Bragibooks record will be removed. Audio files on disk will not be affected.'}
+                                </p>
                             </div>
                             <div className="modal-footer">
                                 <button
                                     type="button"
                                     className="btn btn-secondary"
-                                    onClick={() => setShowDeleteModal(false)}
+                                    onClick={() => { setShowDeleteModal(false); setDeleteFiles(false); }}
                                     disabled={deleting}
                                 >
                                     Cancel
@@ -668,7 +718,7 @@ const BookDetailPage: React.FC = () => {
                                             <span className="spinner-border spinner-border-sm me-2" role="status" />
                                             Deleting...
                                         </>
-                                    ) : 'Delete'}
+                                    ) : deleteFiles ? 'Delete Record & Files' : 'Delete Record'}
                                 </button>
                             </div>
                         </div>
@@ -797,6 +847,7 @@ const BookDetailPage: React.FC = () => {
                                 { key: 'title', label: 'Title' },
                                 { key: 'author', label: 'Author(s)' },
                                 { key: 'narrator', label: 'Narrator(s)' },
+                                { key: 'series', label: 'Series' },
                                 { key: 'year', label: 'Year', type: 'number' },
                                 { key: 'genre', label: 'Genre' },
                             ].map(({ key, label, type }) => (

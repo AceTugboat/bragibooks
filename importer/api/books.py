@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from django.http import JsonResponse
 from django.views import View
 
-from ..models import Book, StatusChoices
+from ..models import Book, Setting, StatusChoices
 from ..tasks import m4b_merge_task
 from .mixins import JsonLoginRequiredMixin
 
@@ -33,6 +33,9 @@ def _validate_cover_url(url: str) -> bool:
 
 
 def serialize_book(book: Book) -> dict:
+    dest = Path(book.dest_path) if book.dest_path else None
+    output_file_exists = bool(dest and dest.exists())
+    file_size = dest.stat().st_size if output_file_exists else None
     return {
         'id': book.id,
         'title': book.title,
@@ -44,10 +47,13 @@ def serialize_book(book: Book) -> dict:
         'publisher': book.publisher,
         'lang': book.lang,
         'runtime_length_minutes': book.runtime_length_minutes,
+        'audio_bitrate': book.audio_bitrate,
         'format_type': book.format_type,
         'converted': book.converted,
         'src_path': book.src_path,
         'dest_path': book.dest_path,
+        'output_file_exists': output_file_exists,
+        'file_size': file_size,
         'created_at': book.created_at.isoformat(),
         'updated_at': book.updated_at.isoformat(),
         'cover_image_link': book.cover_image_link,
@@ -111,7 +117,22 @@ class BookDetailAPI(JsonLoginRequiredMixin, View):
 
     def delete(self, request, pk):
         try:
+            data = json.loads(request.body) if request.body else {}
+        except json.JSONDecodeError:
+            data = {}
+        delete_files = bool(data.get('delete_files', False))
+        try:
             book = Book.objects.get(pk=pk)
+            if delete_files and book.dest_path:
+                book_folder = Path(book.dest_path).parent
+                try:
+                    setting = Setting.objects.get()
+                    output_root = Path(setting.output_directory).resolve()
+                    resolved = book_folder.resolve()
+                    if resolved != output_root and str(resolved).startswith(str(output_root)):
+                        shutil.rmtree(book_folder, ignore_errors=True)
+                except Setting.DoesNotExist:
+                    pass
             book.delete()
             return JsonResponse({}, status=204)
         except Book.DoesNotExist:
@@ -189,6 +210,9 @@ class BookMetadataAPI(JsonLoginRequiredMixin, View):
             args.append(f"--description={data['description']}")
         if data.get('genre'):
             args.append(f"--genre={data['genre']}")
+        if data.get('series'):
+            args.append(f"--series={data['series']}")
+            book.series = data['series']
         args.append(book.dest_path)
 
         try:
@@ -248,15 +272,29 @@ class BookChaptersAPI(JsonLoginRequiredMixin, View):
             return JsonResponse({'error': 'Invalid JSON body'}, status=400)
 
         chapter_file = self._chapter_file(book)
+
+        # Security: ensure the chapter file stays inside the configured output directory
+        try:
+            setting = Setting.objects.get()
+            output_root = Path(setting.output_directory).resolve()
+            if not str(chapter_file.resolve()).startswith(str(output_root)):
+                return JsonResponse({'error': 'Invalid output path'}, status=400)
+        except Setting.DoesNotExist:
+            pass
+
         chapter_file.parent.mkdir(parents=True, exist_ok=True)
         with open(chapter_file, 'w') as f:
             for ch in chapters:
-                f.write(f"{ch['timestamp']} {ch['name']}\n")
+                # Strip newlines to prevent line injection
+                ts = str(ch.get('timestamp', '')).replace('\n', '').replace('\r', '')
+                name = str(ch.get('name', '')).replace('\n', ' ').replace('\r', ' ')
+                f.write(f"{ts} {name}\n")
 
         dest = Path(book.dest_path)
         if not dest.exists():
+            missing_name = dest.name
             return JsonResponse({'saved': True, 'embedded': False,
-                                 'message': 'Chapter file saved. Chapters will be embedded when the output file is available.'})
+                                 'message': f'Chapter file saved. Output file "{missing_name}" was not found on disk — chapters will be embedded when the file is available.'})
 
         mp4chaps = shutil.which('mp4chaps')
         if not mp4chaps:

@@ -66,8 +66,8 @@ export const bookApi = {
         return response.data.input_dirs;
     },
 
-    delete: async (id: string | number): Promise<void> => {
-        await apiClient.delete(`/api/books/${id}/`);
+    delete: async (id: string | number, deleteFiles = false): Promise<void> => {
+        await apiClient.delete(`/api/books/${id}/`, { data: { delete_files: deleteFiles } });
     },
 
     reprocess: async (id: string | number, asin?: string): Promise<void> => {
