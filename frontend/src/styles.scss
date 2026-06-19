@@ -544,12 +544,19 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
 
 // Full-viewport file tree (Step 1 — no card wrapper)
 .import-file-view {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    bottom: 0;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 4rem); // viewport minus main-content top + bottom padding (2rem each)
+    background-color: var(--color-bg-primary);
+    z-index: 10;
 
     @media (max-width: 768px) {
-        height: calc(100vh - 80px - 2rem); // mobile top nav (80px) + bottom padding
+        left: 0;
+        top: 60px; // mobile top nav height
     }
 }
 
