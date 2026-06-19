@@ -185,15 +185,6 @@ const ImportPage: React.FC = () => {
                                 </div>
                             ))}
                         </div>
-                        <div className="import-selected-drawer-footer">
-                            <button
-                                className="btn btn-success w-100"
-                                onClick={handleNext}
-                                disabled={loadingFiles}
-                            >
-                                Next <i className="fas fa-arrow-right ms-1" />
-                            </button>
-                        </div>
                     </div>
                 )}
 

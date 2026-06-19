@@ -660,12 +660,6 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
     &:last-child { border-bottom: none; }
 }
 
-.import-selected-drawer-footer {
-    padding: var(--space-3) var(--space-5);
-    border-top: 1px solid var(--color-border-primary);
-    flex-shrink: 0;
-}
-
 // ---- Form controls -----------------------------------------
 
 .form-control,

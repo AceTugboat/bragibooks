@@ -53,6 +53,7 @@ const BookDetailPage: React.FC = () => {
     const [savingChapters, setSavingChapters] = useState(false);
     const [chapterError, setChapterError] = useState<string | null>(null);
     const [importError, setImportError] = useState<string | null>(null);
+    const [importChapterError, setImportChapterError] = useState<string | null>(null);
     const chapterFileInputRef = useRef<HTMLInputElement>(null);
     const [showCoverModal, setShowCoverModal] = useState(false);
     const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -152,6 +153,10 @@ const BookDetailPage: React.FC = () => {
         } finally {
             setSavingChapters(false);
         }
+    };
+
+    const handleAddChapter = () => {
+        setChapters(prev => [...prev, { index: prev.length + 1, timestamp: '00:00:00.000', name: '' }]);
     };
 
     const handleImportChapters = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -491,73 +496,28 @@ const BookDetailPage: React.FC = () => {
                                                 {importError && (
                                                     <div className="alert alert-danger py-2">{importError}</div>
                                                 )}
+                                                {importChapterError && (
+                                                    <div className="alert alert-warning">{importChapterError}</div>
+                                                )}
                                                 {loadingChapters ? (
                                                     <div className="text-center py-3"><div className="spinner-border" /></div>
                                                 ) : chapters.length === 0 ? (
-                                                    <p className="text-muted mb-3">No chapters found. Import a file to add them.</p>
-                                                ) : (
-                                                    <div className="table-responsive mb-3">
-                                                        <table className="table table-sm">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th style={{ width: 40 }}>#</th>
-                                                                    <th style={{ width: 155 }}>Timestamp</th>
-                                                                    <th>Name</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {chapters.map((ch, i) => (
-                                                                    <tr key={i}>
-                                                                        <td className="text-muted align-middle">{ch.index}</td>
-                                                                        <td>
-                                                                            <input
-                                                                                type="text"
-                                                                                className="form-control form-control-sm font-monospace"
-                                                                                value={ch.timestamp}
-                                                                                onChange={e => setChapters(prev => {
-                                                                                    const next = [...prev];
-                                                                                    next[i] = { ...next[i], timestamp: e.target.value };
-                                                                                    return next;
-                                                                                })}
-                                                                            />
-                                                                        </td>
-                                                                        <td>
-                                                                            <input
-                                                                                type="text"
-                                                                                className="form-control form-control-sm"
-                                                                                value={ch.name}
-                                                                                onChange={e => setChapters(prev => {
-                                                                                    const next = [...prev];
-                                                                                    next[i] = { ...next[i], name: e.target.value };
-                                                                                    return next;
-                                                                                })}
-                                                                            />
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                )}
-                                                {!loadingChapters && (
-                                                    <div className="d-flex gap-2 flex-wrap">
-                                                        {chapters.length > 0 && (
+                                                    <div className="text-center py-4">
+                                                        <p className="text-muted mb-3">No chapters file found for this book.</p>
+                                                        <div className="d-flex gap-2 justify-content-center flex-wrap">
                                                             <button
-                                                                className="btn btn-primary btn-sm"
-                                                                onClick={handleSaveChapters}
-                                                                disabled={savingChapters}
+                                                                className="btn btn-success btn-sm"
+                                                                onClick={handleAddChapter}
                                                             >
-                                                                {savingChapters ? <span className="spinner-border spinner-border-sm me-1" role="status" /> : null}
-                                                                Save Chapters
+                                                                <i className="fas fa-plus me-1" /> Create Manually
                                                             </button>
-                                                        )}
-                                                        <button
-                                                            className="btn btn-outline-secondary btn-sm"
-                                                            onClick={() => chapterFileInputRef.current?.click()}
-                                                        >
-                                                            <i className="fas fa-file-import me-1" />
-                                                            Import .txt / .csv
-                                                        </button>
+                                                            <button
+                                                                className="btn btn-outline-secondary btn-sm"
+                                                                onClick={() => chapterFileInputRef.current?.click()}
+                                                            >
+                                                                <i className="fas fa-file-import me-1" /> Import .txt / .csv
+                                                            </button>
+                                                        </div>
                                                         <input
                                                             ref={chapterFileInputRef}
                                                             type="file"
@@ -566,6 +526,93 @@ const BookDetailPage: React.FC = () => {
                                                             onChange={handleImportChapters}
                                                         />
                                                     </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="table-responsive">
+                                                            <table className="table table-sm">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th style={{ width: 50 }}>#</th>
+                                                                        <th style={{ width: 130 }}>Timestamp</th>
+                                                                        <th>Name</th>
+                                                                        <th style={{ width: 40 }} />
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {chapters.map((ch, i) => (
+                                                                        <tr key={i}>
+                                                                            <td className="text-muted align-middle">{ch.index}</td>
+                                                                            <td>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    className="form-control form-control-sm font-monospace"
+                                                                                    value={ch.timestamp}
+                                                                                    onChange={e => setChapters(prev => {
+                                                                                        const next = [...prev];
+                                                                                        next[i] = { ...next[i], timestamp: e.target.value };
+                                                                                        return next;
+                                                                                    })}
+                                                                                />
+                                                                            </td>
+                                                                            <td>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    className="form-control form-control-sm"
+                                                                                    value={ch.name}
+                                                                                    onChange={e => setChapters(prev => {
+                                                                                        const next = [...prev];
+                                                                                        next[i] = { ...next[i], name: e.target.value };
+                                                                                        return next;
+                                                                                    })}
+                                                                                />
+                                                                            </td>
+                                                                            <td className="align-middle">
+                                                                                <button
+                                                                                    className="btn btn-link btn-sm p-0"
+                                                                                    style={{ color: 'var(--color-danger)' }}
+                                                                                    onClick={() => setChapters(prev =>
+                                                                                        prev.filter((_, j) => j !== i).map((c, j) => ({ ...c, index: j + 1 }))
+                                                                                    )}
+                                                                                    aria-label="Remove chapter"
+                                                                                >
+                                                                                    <i className="fas fa-times" />
+                                                                                </button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                        <div className="d-flex gap-2 flex-wrap">
+                                                            <button
+                                                                className="btn btn-success btn-sm"
+                                                                onClick={handleSaveChapters}
+                                                                disabled={savingChapters}
+                                                            >
+                                                                {savingChapters ? <span className="spinner-border spinner-border-sm me-1" role="status" /> : null}
+                                                                Save Chapters
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-outline-secondary btn-sm"
+                                                                onClick={handleAddChapter}
+                                                            >
+                                                                <i className="fas fa-plus me-1" /> Add Row
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-outline-secondary btn-sm"
+                                                                onClick={() => chapterFileInputRef.current?.click()}
+                                                            >
+                                                                <i className="fas fa-file-import me-1" /> Import .txt / .csv
+                                                            </button>
+                                                            <input
+                                                                ref={chapterFileInputRef}
+                                                                type="file"
+                                                                accept=".txt,.csv"
+                                                                className="d-none"
+                                                                onChange={handleImportChapters}
+                                                            />
+                                                        </div>
+                                                    </>
                                                 )}
                                             </div>
                                         )}
