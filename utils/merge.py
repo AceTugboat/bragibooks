@@ -217,6 +217,16 @@ def run_m4b_merge(asin: str):
         logger.info("Book %s was cancelled during processing, skipping DONE", asin)
         return
 
+    # m4b-tool can fail internally without raising a Python exception.
+    # Verify the output file was actually produced before marking as DONE.
+    expected_output = Path(f"{m4b.book_output}.m4b")
+    if not expected_output.exists():
+        logger.error(f"Merge appeared to succeed but output file is missing: {expected_output}")
+        book.status.status = StatusChoices.ERROR
+        book.status.message = (book.status.message + "\nMerge failed: output file was not created.").lstrip('\n')
+        book.status.save()
+        return
+
     book.dest_path = f"{m4b.book_output}.m4b"
     book.status.status = StatusChoices.DONE
     book.status.save(update_fields=['status'])
