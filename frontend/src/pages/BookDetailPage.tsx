@@ -41,11 +41,12 @@ const BookDetailPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [deleteFiles, setDeleteFiles] = useState(false);
     const [showReprocessModal, setShowReprocessModal] = useState(false);
     const [reprocessAsin, setReprocessAsin] = useState('');
     const [reprocessing, setReprocessing] = useState(false);
     const [showMetaModal, setShowMetaModal] = useState(false);
-    const [metaForm, setMetaForm] = useState({ title: '', author: '', narrator: '', year: '', description: '', genre: '' });
+    const [metaForm, setMetaForm] = useState({ title: '', author: '', narrator: '', year: '', series: '', genre: '', description: '' });
     const [savingMeta, setSavingMeta] = useState(false);
     const [chapters, setChapters] = useState<Chapter[]>([]);
     const [chaptersOpen, setChaptersOpen] = useState(false);
@@ -53,6 +54,7 @@ const BookDetailPage: React.FC = () => {
     const [savingChapters, setSavingChapters] = useState(false);
     const [chapterError, setChapterError] = useState<string | null>(null);
     const [importError, setImportError] = useState<string | null>(null);
+    const [chapterSaveMessage, setChapterSaveMessage] = useState<string | null>(null);
     const chapterFileInputRef = useRef<HTMLInputElement>(null);
     const [showCoverModal, setShowCoverModal] = useState(false);
     const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -87,7 +89,7 @@ const BookDetailPage: React.FC = () => {
     const handleDelete = async () => {
         try {
             setDeleting(true);
-            await bookApi.delete(id!);
+            await bookApi.delete(id!, deleteFiles);
             await refreshBooks();
             navigate('/');
         } catch (err) {
@@ -95,6 +97,7 @@ const BookDetailPage: React.FC = () => {
             setShowDeleteModal(false);
         } finally {
             setDeleting(false);
+            setDeleteFiles(false);
         }
     };
 
@@ -119,8 +122,9 @@ const BookDetailPage: React.FC = () => {
             author: book?.authors?.map((a: Author) => `${a.first_name} ${a.last_name}`).join(', ') ?? '',
             narrator: book?.narrators?.map((n: Narrator) => `${n.first_name} ${n.last_name}`).join(', ') ?? '',
             year: '',
-            description: book?.long_desc ?? book?.short_desc ?? '',
+            series: book?.series ?? '',
             genre: '',
+            description: book?.long_desc ?? book?.short_desc ?? '',
         });
         setShowMetaModal(true);
     };
@@ -144,14 +148,20 @@ const BookDetailPage: React.FC = () => {
     const handleSaveChapters = async () => {
         if (!id) return;
         setSavingChapters(true);
+        setChapterSaveMessage(null);
         try {
-            await bookApi.saveChapters(id, chapters);
+            const result = await bookApi.saveChapters(id, chapters);
             setChapterError(null);
+            if (result?.message) setChapterSaveMessage(result.message);
         } catch (err) {
             setChapterError(getErrorMessage(err));
         } finally {
             setSavingChapters(false);
         }
+    };
+
+    const handleAddChapter = () => {
+        setChapters(prev => [...prev, { index: prev.length + 1, timestamp: '00:00:00.000', name: '' }]);
     };
 
     const handleImportChapters = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -222,8 +232,9 @@ const BookDetailPage: React.FC = () => {
                 author: metaForm.author || undefined,
                 narrator: metaForm.narrator || undefined,
                 year: metaForm.year ? parseInt(metaForm.year, 10) : undefined,
-                description: metaForm.description || undefined,
+                series: metaForm.series || undefined,
                 genre: metaForm.genre || undefined,
+                description: metaForm.description || undefined,
             });
             setBook(updated);
             setShowMetaModal(false);
@@ -270,6 +281,12 @@ const BookDetailPage: React.FC = () => {
 
     const formatNarrators = (narrators: typeof book.narrators): string => {
         return narrators.map(n => `${n.first_name} ${n.last_name}`).join(', ');
+    };
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
     };
 
     return (
@@ -366,6 +383,12 @@ const BookDetailPage: React.FC = () => {
                                         <strong>Series:</strong> {book.series}
                                     </p>
                                 )}
+                                {!book.output_file_exists && book.dest_path && (
+                                    <div className="alert alert-warning py-2 px-3 mt-2 mb-0 d-flex align-items-center gap-2">
+                                        <i className="fas fa-triangle-exclamation" />
+                                        <span className="small">Output file <code>{book.dest_path.split('/').pop()}</code> was not found on disk.</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Description */}
@@ -398,6 +421,11 @@ const BookDetailPage: React.FC = () => {
                                                 <li className="mb-2">
                                                     <strong>Runtime:</strong> {formatRuntime(book.runtime_length_minutes)}
                                                 </li>
+                                                {book.audio_bitrate && (
+                                                    <li className="mb-2">
+                                                        <strong>Bitrate:</strong> {book.audio_bitrate} kbps
+                                                    </li>
+                                                )}
                                                 <li className="mb-2">
                                                     <strong>Converted:</strong> {book.converted ? 'Yes' : 'No'}
                                                 </li>
@@ -435,6 +463,11 @@ const BookDetailPage: React.FC = () => {
                                                         <strong>ASIN:</strong> {book.asin}
                                                     </li>
                                                 )}
+                                                {book.series && (
+                                                    <li className="mb-2">
+                                                        <strong>Series:</strong> {book.series}
+                                                    </li>
+                                                )}
                                             </ul>
                                         </div>
                                     </div>
@@ -457,6 +490,14 @@ const BookDetailPage: React.FC = () => {
                                                 {book.dest_path && (
                                                     <li className="mb-2">
                                                         <strong>Destination Path:</strong> <code className="text-break">{book.dest_path}</code>
+                                                        {!book.output_file_exists && (
+                                                            <span className="badge bg-warning text-dark ms-2">File missing</span>
+                                                        )}
+                                                    </li>
+                                                )}
+                                                {book.file_size != null && (
+                                                    <li className="mb-2">
+                                                        <strong>File Size:</strong> {formatFileSize(book.file_size)}
                                                     </li>
                                                 )}
                                                 <li className="mb-2">
@@ -491,73 +532,28 @@ const BookDetailPage: React.FC = () => {
                                                 {importError && (
                                                     <div className="alert alert-danger py-2">{importError}</div>
                                                 )}
+                                                {chapterSaveMessage && (
+                                                    <div className="alert alert-info">{chapterSaveMessage}</div>
+                                                )}
                                                 {loadingChapters ? (
                                                     <div className="text-center py-3"><div className="spinner-border" /></div>
                                                 ) : chapters.length === 0 ? (
-                                                    <p className="text-muted mb-3">No chapters found. Import a file to add them.</p>
-                                                ) : (
-                                                    <div className="table-responsive mb-3">
-                                                        <table className="table table-sm">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th style={{ width: 40 }}>#</th>
-                                                                    <th style={{ width: 155 }}>Timestamp</th>
-                                                                    <th>Name</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {chapters.map((ch, i) => (
-                                                                    <tr key={i}>
-                                                                        <td className="text-muted align-middle">{ch.index}</td>
-                                                                        <td>
-                                                                            <input
-                                                                                type="text"
-                                                                                className="form-control form-control-sm font-monospace"
-                                                                                value={ch.timestamp}
-                                                                                onChange={e => setChapters(prev => {
-                                                                                    const next = [...prev];
-                                                                                    next[i] = { ...next[i], timestamp: e.target.value };
-                                                                                    return next;
-                                                                                })}
-                                                                            />
-                                                                        </td>
-                                                                        <td>
-                                                                            <input
-                                                                                type="text"
-                                                                                className="form-control form-control-sm"
-                                                                                value={ch.name}
-                                                                                onChange={e => setChapters(prev => {
-                                                                                    const next = [...prev];
-                                                                                    next[i] = { ...next[i], name: e.target.value };
-                                                                                    return next;
-                                                                                })}
-                                                                            />
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                )}
-                                                {!loadingChapters && (
-                                                    <div className="d-flex gap-2 flex-wrap">
-                                                        {chapters.length > 0 && (
+                                                    <div className="text-center py-4">
+                                                        <p className="text-muted mb-3">No chapters file found for this book.</p>
+                                                        <div className="d-flex gap-2 justify-content-center flex-wrap">
                                                             <button
-                                                                className="btn btn-primary btn-sm"
-                                                                onClick={handleSaveChapters}
-                                                                disabled={savingChapters}
+                                                                className="btn btn-success btn-sm"
+                                                                onClick={handleAddChapter}
                                                             >
-                                                                {savingChapters ? <span className="spinner-border spinner-border-sm me-1" role="status" /> : null}
-                                                                Save Chapters
+                                                                <i className="fas fa-plus me-1" /> Create Manually
                                                             </button>
-                                                        )}
-                                                        <button
-                                                            className="btn btn-outline-secondary btn-sm"
-                                                            onClick={() => chapterFileInputRef.current?.click()}
-                                                        >
-                                                            <i className="fas fa-file-import me-1" />
-                                                            Import .txt / .csv
-                                                        </button>
+                                                            <button
+                                                                className="btn btn-outline-secondary btn-sm"
+                                                                onClick={() => chapterFileInputRef.current?.click()}
+                                                            >
+                                                                <i className="fas fa-file-import me-1" /> Import .txt / .csv
+                                                            </button>
+                                                        </div>
                                                         <input
                                                             ref={chapterFileInputRef}
                                                             type="file"
@@ -566,6 +562,93 @@ const BookDetailPage: React.FC = () => {
                                                             onChange={handleImportChapters}
                                                         />
                                                     </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="table-responsive">
+                                                            <table className="table table-sm">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th style={{ width: 50 }}>#</th>
+                                                                        <th style={{ width: 130 }}>Timestamp</th>
+                                                                        <th>Name</th>
+                                                                        <th style={{ width: 40 }} />
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {chapters.map((ch, i) => (
+                                                                        <tr key={i}>
+                                                                            <td className="text-muted align-middle">{ch.index}</td>
+                                                                            <td>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    className="form-control form-control-sm font-monospace"
+                                                                                    value={ch.timestamp}
+                                                                                    onChange={e => setChapters(prev => {
+                                                                                        const next = [...prev];
+                                                                                        next[i] = { ...next[i], timestamp: e.target.value };
+                                                                                        return next;
+                                                                                    })}
+                                                                                />
+                                                                            </td>
+                                                                            <td>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    className="form-control form-control-sm"
+                                                                                    value={ch.name}
+                                                                                    onChange={e => setChapters(prev => {
+                                                                                        const next = [...prev];
+                                                                                        next[i] = { ...next[i], name: e.target.value };
+                                                                                        return next;
+                                                                                    })}
+                                                                                />
+                                                                            </td>
+                                                                            <td className="align-middle">
+                                                                                <button
+                                                                                    className="btn btn-link btn-sm p-0"
+                                                                                    style={{ color: 'var(--color-danger)' }}
+                                                                                    onClick={() => setChapters(prev =>
+                                                                                        prev.filter((_, j) => j !== i).map((c, j) => ({ ...c, index: j + 1 }))
+                                                                                    )}
+                                                                                    aria-label="Remove chapter"
+                                                                                >
+                                                                                    <i className="fas fa-times" />
+                                                                                </button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                        <div className="d-flex gap-2 flex-wrap">
+                                                            <button
+                                                                className="btn btn-success btn-sm"
+                                                                onClick={handleSaveChapters}
+                                                                disabled={savingChapters}
+                                                            >
+                                                                {savingChapters ? <span className="spinner-border spinner-border-sm me-1" role="status" /> : null}
+                                                                Save Chapters
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-outline-secondary btn-sm"
+                                                                onClick={handleAddChapter}
+                                                            >
+                                                                <i className="fas fa-plus me-1" /> Add Row
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-outline-secondary btn-sm"
+                                                                onClick={() => chapterFileInputRef.current?.click()}
+                                                            >
+                                                                <i className="fas fa-file-import me-1" /> Import .txt / .csv
+                                                            </button>
+                                                            <input
+                                                                ref={chapterFileInputRef}
+                                                                type="file"
+                                                                accept=".txt,.csv"
+                                                                className="d-none"
+                                                                onChange={handleImportChapters}
+                                                            />
+                                                        </div>
+                                                    </>
                                                 )}
                                             </div>
                                         )}
@@ -593,13 +676,29 @@ const BookDetailPage: React.FC = () => {
                             </div>
                             <div className="modal-body">
                                 <p>Are you sure you want to delete <strong>{book.title}</strong>?</p>
-                                <p className="text-muted mb-0">This removes the record from Bragibooks but does not delete audio files from disk.</p>
+                                <div className="form-check mb-3">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id="deleteFilesCheck"
+                                        checked={deleteFiles}
+                                        onChange={e => setDeleteFiles(e.target.checked)}
+                                    />
+                                    <label className="form-check-label" htmlFor="deleteFilesCheck">
+                                        Also delete the output folder and all its files from disk
+                                    </label>
+                                </div>
+                                <p className="text-muted small mb-0">
+                                    {deleteFiles
+                                        ? <><i className="fas fa-triangle-exclamation me-1 text-warning" />This will permanently delete the output folder from disk and cannot be undone.</>
+                                        : 'Only the Bragibooks record will be removed. Audio files on disk will not be affected.'}
+                                </p>
                             </div>
                             <div className="modal-footer">
                                 <button
                                     type="button"
                                     className="btn btn-secondary"
-                                    onClick={() => setShowDeleteModal(false)}
+                                    onClick={() => { setShowDeleteModal(false); setDeleteFiles(false); }}
                                     disabled={deleting}
                                 >
                                     Cancel
@@ -615,7 +714,7 @@ const BookDetailPage: React.FC = () => {
                                             <span className="spinner-border spinner-border-sm me-2" role="status" />
                                             Deleting...
                                         </>
-                                    ) : 'Delete'}
+                                    ) : deleteFiles ? 'Delete Record & Files' : 'Delete Record'}
                                 </button>
                             </div>
                         </div>
@@ -744,6 +843,7 @@ const BookDetailPage: React.FC = () => {
                                 { key: 'title', label: 'Title' },
                                 { key: 'author', label: 'Author(s)' },
                                 { key: 'narrator', label: 'Narrator(s)' },
+                                { key: 'series', label: 'Series' },
                                 { key: 'year', label: 'Year', type: 'number' },
                                 { key: 'genre', label: 'Genre' },
                             ].map(({ key, label, type }) => (

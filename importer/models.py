@@ -56,6 +56,7 @@ class Book(models.Model):
     runtime_length_minutes = models.IntegerField()
     format_type = models.CharField(max_length=25)
     converted = models.BooleanField()
+    audio_bitrate = models.IntegerField(null=True, blank=True)
     src_path = models.TextField()
     dest_path = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

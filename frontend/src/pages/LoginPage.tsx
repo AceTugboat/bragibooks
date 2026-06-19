@@ -17,7 +17,6 @@ const LoginPage: React.FC = () => {
         e.preventDefault();
         setError(null);
         setLoading(true);
-
         try {
             await login(username, password);
             navigate('/');
@@ -53,94 +52,80 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div className="min-vh-100 d-flex align-items-center justify-content-center">
-            <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
-                <div className="card-body p-4">
-                    <div className="text-center mb-4">
-                        <div className="mb-3">
-                            <i className="fa-solid fa-scroll fa-3x text-gold"></i>
-                        </div>
-                        <h3 className="mb-2">BragíBooks</h3>
-                        <p>Sign in to continue</p>
+        <div className="auth-page">
+            <div className="auth-card">
+                <div className="auth-brand">
+                    <i className="fa-solid fa-scroll auth-icon" />
+                    <h2>BragíBooks</h2>
+                    <p>Sign in to continue</p>
+                </div>
+
+                {error && (
+                    <div className="alert alert-danger" role="alert">{error}</div>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-3">
+                        <label htmlFor="username" className="form-label">Username</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="username"
+                            value={username}
+                            onChange={e => setUsername(e.target.value)}
+                            required
+                            autoFocus
+                            disabled={loading}
+                        />
                     </div>
 
-                    {error && (
-                        <div className="alert alert-danger" role="alert">
-                            {error}
-                        </div>
-                    )}
-
-                    <form onSubmit={handleSubmit}>
-                        <div className="mb-3">
-                            <label htmlFor="username" className="form-label">
-                                Username
-                            </label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                id="username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                required
-                                autoFocus
-                                disabled={loading}
-                            />
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="password" className="form-label">
-                                Password
-                            </label>
-                            <input
-                                type="password"
-                                className="form-control"
-                                id="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                disabled={loading}
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            className="btn btn-success w-100"
+                    <div className="mb-4">
+                        <label htmlFor="password" className="form-label">Password</label>
+                        <input
+                            type="password"
+                            className="form-control"
+                            id="password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            required
                             disabled={loading}
-                        >
-                            {loading ? (
-                                <>
-                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    Signing in...
-                                </>
-                            ) : (
-                                'Sign In'
-                            )}
-                        </button>
-                    </form>
+                        />
+                    </div>
 
-                    {window.PublicKeyCredential && (
-                        <div className="mt-3">
-                            <div className="d-flex align-items-center gap-2 mb-3">
-                                <hr className="flex-grow-1" />
-                                <small className="text-muted">or</small>
-                                <hr className="flex-grow-1" />
-                            </div>
-                            <button
-                                type="button"
-                                className="btn btn-outline-secondary w-100"
-                                onClick={handlePasskeyLogin}
-                                disabled={passkeyLoading || loading}
-                            >
-                                {passkeyLoading ? (
-                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
-                                ) : (
-                                    <i className="fa-solid fa-key me-2" />
-                                )}
-                                Sign in with a passkey
-                            </button>
+                    <button
+                        type="submit"
+                        className="btn btn-success w-100"
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                                Signing in…
+                            </>
+                        ) : 'Sign In'}
+                    </button>
+                </form>
+
+                {window.PublicKeyCredential && (
+                    <>
+                        <div className="auth-divider">
+                            <hr /><small>or</small><hr />
                         </div>
-                    )}
-                </div>
+                        <button
+                            type="button"
+                            className="btn btn-outline-light w-100"
+                            onClick={handlePasskeyLogin}
+                            disabled={passkeyLoading || loading}
+                        >
+                            {passkeyLoading ? (
+                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                            ) : (
+                                <i className="fa-solid fa-key me-2" />
+                            )}
+                            Sign in with a passkey
+                        </button>
+                    </>
+                )}
             </div>
         </div>
     );

@@ -1,59 +1,45 @@
-// Import modern SASS color module
 @use "sass:color";
 
-// Bragi Color System - Simplified Grey/White Theme
-// Clean, modern interface with grey sidebar and white/dark backgrounds.
-// Accent colors (green, red, gold) used for highlights, active states, and important UI elements.
+// 1. Design tokens (raw $raw-* vars + CSS custom properties)
+@import "./tokens";
 
-// 1. Define color variables
-// Accent colors (preserved from original theme)
-$bragi-green: #184A3A;
-$bragi-red: #8E2F3A;
-$honey-gold: #D8A13F;
+// 2. Bootstrap variable overrides (must come before Bootstrap import)
+$primary:   $raw-burgundy;   // Red = destructive / alert
+$secondary: $raw-slate;
+$success:   $raw-green;      // Green = confirm / constructive
+$warning:   $raw-gold;
+$info:      $raw-gold;
+$danger:    $raw-burgundy;
+$light:     $raw-neutral-0;
+$dark:      $raw-dark-0;
 
-// Light mode colors
-$light-bg: #FFFFFF;
-$light-text: #212529;
-$light-sidebar: #2C3E50;
-$light-border: #DEE2E6;
-$light-card-bg: #FFFFFF;
+// Dark-first: body background defaults to dark
+$body-bg:    $raw-dark-0;
+$body-color: #E2E8F0;
 
-// Dark mode colors
-$dark-bg: #121212;
-$dark-text: #E0E0E0;
-$dark-sidebar: #1A1F2E;
-$dark-border: #3A3A3A;
-$dark-card-bg: #1E1E1E;
-$dark-surface: #2A2A2A;
+$card-border-color: $raw-dark-400;
+$card-cap-bg:       rgba($raw-gold, 0.06);
 
-// 2. Override Bootstrap variables
-$primary: $bragi-red;
-$secondary: $light-sidebar;
-$success: $bragi-green;
-$warning: $honey-gold;
-$info: $bragi-green;
-$light: $light-bg;
-$dark: $dark-bg;
+$border-radius:    6px;
+$border-radius-sm: 4px;
+$border-radius-lg: 10px;
 
-$body-bg: $light-bg;
-$body-color: $light-text;
+$btn-primary-bg:           $raw-burgundy;
+$btn-primary-border:       $raw-burgundy;
+$btn-primary-hover-bg:     color.adjust($raw-burgundy, $lightness: -10%);
+$btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
 
-$card-border-color: $light-border;
-$card-cap-bg: rgba($honey-gold, 0.05);
-
-$btn-primary-bg: $bragi-red;
-$btn-primary-border: $bragi-red;
-$btn-primary-hover-bg: color.adjust($bragi-red, $lightness: -10%);
-$btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
-
-// 3. Import Bootstrap
+// 3. Bootstrap
 @import "bootstrap/scss/bootstrap";
 
-// 4. Custom Utilities & Overrides
+// 4. Custom styles
+// ============================================================
 
-// Sidebar styles (replaces old navbar)
+
+// ---- Sidebar -----------------------------------------------
+
 .sidebar {
-    background-color: $light-sidebar;
+    background-color: var(--sidebar-bg);
     color: #FFFFFF;
     width: 250px;
     height: 100vh;
@@ -64,7 +50,7 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
     display: flex;
     flex-direction: column;
     z-index: 1000;
-    transition: transform 0.3s ease-in-out;
+    transition: transform var(--duration-normal) var(--ease-default);
 
     @media (max-width: 768px) {
         transform: translateX(-100%);
@@ -80,24 +66,24 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
         font-size: 1.5rem;
         font-weight: bold;
         color: #FFFFFF;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--sidebar-border, rgba(255,255,255,0.08));
     }
 
     .sidebar-nav {
         flex: 1;
-        padding: 0 1rem; // Add horizontal padding for rounded items
+        padding: 0 1rem;
 
         .nav-item {
             margin-bottom: 0.25rem;
 
             .nav-link {
-                color: rgba(255, 255, 255, 0.8);
+                color: var(--color-text-on-dark);
                 padding: 0.75rem 1rem;
                 display: flex;
                 align-items: center;
-                transition: all 0.2s ease;
-                border-radius: 8px; // Rounded corners
-                border-left: none; // Remove old border
+                transition: all var(--duration-fast) var(--ease-default);
+                border-radius: var(--radius-md);
+                border-left: none;
 
                 i:not(.fa-chevron-right) {
                     margin-right: 0.75rem;
@@ -105,35 +91,25 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
                     text-align: center;
                 }
 
-                // Chevron rotation
-                .transition-transform {
-                    transition: transform 0.2s ease;
-                }
-
-                .rotate-90 {
-                    transform: rotate(90deg);
-                }
+                .transition-transform { transition: transform var(--duration-fast) var(--ease-default); }
+                .rotate-90            { transform: rotate(90deg); }
 
                 &:hover {
                     color: #FFFFFF;
-                    background-color: rgba(255, 255, 255, 0.1);
-                    padding-left: 1rem; // Keep padding consistent
+                    background-color: var(--sidebar-item-hover-bg);
                 }
 
                 &.active {
                     color: #FFFFFF;
-                    background-color: rgba(255, 255, 255, 0.15); // Lighter background for active
-                    padding-left: 1rem; // Keep padding consistent
+                    background-color: var(--sidebar-item-active-bg);
                 }
             }
 
-            // Tree View for Nested Items
             ul {
                 position: relative;
-                margin-left: 1.5rem; // Indent
+                margin-left: 1.5rem;
                 padding-left: 0.5rem;
 
-                // Vertical Line
                 &::before {
                     content: '';
                     position: absolute;
@@ -141,18 +117,16 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
                     top: 0;
                     bottom: 0;
                     width: 1px;
-                    background-color: rgba(255, 255, 255, 0.2);
+                    background-color: rgba(255, 255, 255, 0.15);
                 }
 
-                .nav-item {
-                    .nav-link {
-                        padding: 0.5rem 1rem;
-                        font-size: 0.95rem;
+                .nav-item .nav-link {
+                    padding: 0.5rem 1rem;
+                    font-size: 0.95rem;
 
-                        &.active {
-                            background-color: rgba(255, 255, 255, 0.15);
-                            color: $honey-gold; // Highlight text color for nested active
-                        }
+                    &.active {
+                        background-color: var(--sidebar-item-active-bg);
+                        color: var(--sidebar-active-accent);
                     }
                 }
             }
@@ -161,112 +135,173 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
 
     .sidebar-footer {
         padding: 1rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
 
         .theme-toggle {
             background: none;
             border: none;
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--color-text-on-dark);
             cursor: pointer;
             padding: 0.5rem;
             width: 100%;
             text-align: left;
-            transition: all 0.2s ease;
+            transition: all var(--duration-fast) var(--ease-default);
+            border-radius: var(--radius-md);
 
             &:hover {
                 color: #FFFFFF;
-                background-color: rgba(255, 255, 255, 0.1);
+                background-color: var(--sidebar-item-hover-bg);
             }
 
-            i {
-                margin-right: 0.75rem;
-            }
+            i { margin-right: 0.75rem; }
         }
     }
 }
 
-// Mobile Top Navigation
+// ---- Mobile navigation -------------------------------------
+
 .mobile-top-nav {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     height: 60px;
-    background-color: $light-sidebar;
+    background-color: var(--sidebar-bg);
     z-index: 1001;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 1rem;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 
     .mobile-brand {
         font-size: 1.2rem;
         white-space: nowrap;
     }
-
 }
 
-// Mobile Overlay
 .sidebar-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--color-overlay);
     z-index: 999;
     backdrop-filter: blur(2px);
 }
 
-// Main content area (offset for sidebar)
+// ---- Main content ------------------------------------------
+
 .main-content {
     margin-left: 250px;
     min-height: 100vh;
     padding: 2rem;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    transition: background-color var(--duration-normal) var(--ease-default);
 
     @media (max-width: 768px) {
         margin-left: 0;
-        padding-top: 80px; // Space for top nav (60px) + padding
+        padding-top: 80px;
     }
 }
 
-// Card overrides
+// ---- Cards -------------------------------------------------
+
 .card {
-    border: 1px solid $light-border;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    background-color: $light-card-bg;
+    border: 1px solid var(--color-border-primary);
+    box-shadow: var(--shadow-sm);
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    transition: background-color var(--duration-normal) var(--ease-default),
+                border-color var(--duration-normal) var(--ease-default);
 }
 
 .card-header {
-    background-color: rgba($honey-gold, 0.05);
-    border-bottom: 1px solid $light-border;
+    background-color: rgba($raw-gold, 0.06);
+    border-bottom: 1px solid var(--color-border-primary);
     font-weight: 600;
-    color: $light-text;
+    color: var(--color-text-primary);
 }
 
-// Custom accent text colors
-.text-gold {
-    color: $honey-gold !important;
+.card-body { background-color: var(--color-bg-secondary); }
+
+// ---- Accent text utilities ---------------------------------
+
+.text-gold        { color: var(--color-info) !important; }
+.text-bragi-green { color: var(--color-success) !important; }
+.text-bragi-red   { color: var(--color-danger) !important; }
+
+// ---- Auth pages (login / setup) ----------------------------
+
+.auth-page {
+    min-height: 100vh;
+    background-color: var(--login-page-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-5);
+
+    .auth-card {
+        width: 100%;
+        max-width: 440px;
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border-primary);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--login-card-shadow);
+        padding: var(--space-6);
+    }
+
+    .auth-brand {
+        text-align: center;
+        margin-bottom: var(--space-5);
+
+        .auth-icon {
+            font-size: 2.5rem;
+            color: var(--color-info);
+            display: block;
+            margin-bottom: var(--space-3);
+        }
+
+        h2 {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-text-primary);
+            margin: 0 0 var(--space-1);
+        }
+
+        p {
+            color: var(--color-text-secondary);
+            margin: 0;
+            font-size: var(--font-size-sm);
+        }
+    }
+
+    .auth-divider {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        margin: var(--space-4) 0;
+
+        hr {
+            flex: 1;
+            border-color: var(--color-border-primary);
+            opacity: 1;
+        }
+
+        small { color: var(--color-text-tertiary); }
+    }
 }
 
-.text-bragi-green {
-    color: $bragi-green !important;
-}
+// ---- Page header -------------------------------------------
 
-.text-bragi-red {
-    color: $bragi-red !important;
-}
-
-// Page Header (Dynamic per page)
 .page-header {
     position: sticky;
     top: 0;
     z-index: 100;
-    background-color: $light-bg;
-    border-bottom: 1px solid $light-border;
+    background-color: var(--color-bg-primary);
+    border-bottom: 1px solid var(--color-border-primary);
     padding: 1rem 0;
     margin-bottom: 2rem;
+    transition: background-color var(--duration-normal) var(--ease-default);
 
     .page-header-content {
         display: flex;
@@ -279,6 +314,7 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
     .page-header-title {
         margin: 0;
         font-weight: 600;
+        color: var(--color-text-primary);
     }
 
     .page-header-actions {
@@ -289,10 +325,9 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
     }
 }
 
-// Library Page Styles
-.library-page {
-    padding: 0;
-}
+// ---- Library -----------------------------------------------
+
+.library-page { padding: 0; }
 
 .library-controls {
     display: flex;
@@ -301,35 +336,23 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
     flex: 1;
     justify-content: flex-end;
 
-    @media (max-width: 768px) {
-        // Keep row layout on mobile, but ensure items fit
-        gap: 0.5rem;
-    }
+    @media (max-width: 768px) { gap: 0.5rem; }
 
     .library-search {
         position: relative;
         width: 300px;
         flex-shrink: 0;
-        transition: width 0.3s ease;
+        transition: width var(--duration-normal) var(--ease-default);
 
-        &.focused {
-            width: 500px;
-        }
+        &.focused { width: 500px; }
 
         @media (max-width: 768px) {
-            // Take up remaining space next to sort icon
             flex: 1;
             width: auto;
-
-            &.focused {
-                width: auto;
-            }
+            &.focused { width: auto; }
         }
 
-        input {
-            padding-right: 2.5rem;
-            width: 100%;
-        }
+        input { padding-right: 2.5rem; width: 100%; }
 
         .btn-link {
             position: absolute;
@@ -337,28 +360,17 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
             top: 50%;
             transform: translateY(-50%);
             padding: 0.25rem;
-            color: $light-text;
-        }
-    }
-
-    .form-select {
-        min-width: 150px;
-        max-width: 200px;
-
-        @media (max-width: 768px) {
-            max-width: 100%;
-            width: 100%;
+            color: var(--color-text-primary);
         }
     }
 
     .library-count {
         font-weight: 600;
         white-space: nowrap;
-        color: $honey-gold;
+        color: var(--color-info);
     }
 }
 
-// Unified Sort Wrapper (Icon with invisible select)
 .sort-wrapper {
     position: relative;
     display: inline-flex;
@@ -366,73 +378,38 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
     justify-content: center;
     width: 32px;
     height: 32px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--duration-fast) var(--ease-default);
     cursor: pointer;
 
-    &:hover {
-        background-color: rgba($honey-gold, 0.1);
-    }
+    &:hover { background-color: rgba($raw-gold, 0.12); }
 
-    i {
-        font-size: 1.2rem;
-        pointer-events: none;
-    }
-
-    .sort-select {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
-        cursor: pointer;
-        z-index: 10;
-    }
+    i              { font-size: 1.2rem; pointer-events: none; }
+    .sort-select   { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
 }
 
-// Library Grid (5 columns responsive)
-// TODO: Add list view option
 .library-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 2rem;
-    padding: 0;
 
-    @media (max-width: 1400px) {
-        grid-template-columns: repeat(4, 1fr);
-    }
-
-    @media (max-width: 1200px) {
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    @media (max-width: 768px) {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.75rem;
-    }
-
-    @media (max-width: 480px) {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
-    }
+    @media (max-width: 1400px) { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 1200px) { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 768px)  { grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    @media (max-width: 480px)  { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
 }
 
-// Library Book Card
 .library-book-card {
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-fast) var(--ease-default);
 
     &:hover {
         transform: translateY(-4px);
-
-        .library-book-title {
-            color: $bragi-red;
-        }
+        .library-book-title { color: var(--color-danger); }
     }
 
     &:focus {
-        outline: 2px solid $bragi-red;
+        outline: 2px solid var(--color-border-focus);
         outline-offset: 2px;
     }
 
@@ -441,35 +418,30 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
         width: 100%;
         aspect-ratio: 1/1;
         overflow: hidden;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        background-color: #f0f0f0;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        background-color: var(--color-bg-tertiary);
 
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        img { width: 100%; height: 100%; object-fit: cover; }
     }
 
     .library-book-title {
         margin-top: 0.75rem;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
-        line-height: 1.3;
-        color: $light-text;
-        transition: color 0.2s ease;
-
-        // Ellipsis for long titles
+        line-height: var(--line-height-normal);
+        color: var(--color-text-primary);
+        transition: color var(--duration-fast) var(--ease-default);
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
     }
 }
 
+.library-empty { padding: 4rem 2rem; }
 
+// ---- Pagination --------------------------------------------
 
 .pagination {
     display: flex;
@@ -480,477 +452,547 @@ $btn-primary-hover-border: color.adjust($bragi-red, $lightness: -10%);
         min-width: 40px;
         height: 40px;
         padding: 0.5rem;
-        border: 1px solid $light-border;
-        background-color: $light-bg;
-        color: $light-text;
-        border-radius: 4px;
+        border: 1px solid var(--color-border-primary);
+        background-color: var(--color-bg-secondary);
+        color: var(--color-text-primary);
+        border-radius: var(--radius-sm);
         cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 0.9rem;
+        transition: all var(--duration-fast) var(--ease-default);
+        font-size: var(--font-size-sm);
 
         &:hover:not(:disabled) {
-            background-color: rgba($honey-gold, 0.1);
-            border-color: $honey-gold;
-            color: $honey-gold;
+            background-color: rgba($raw-gold, 0.12);
+            border-color: var(--color-info);
+            color: var(--color-info);
         }
 
         &.active {
-            background-color: $bragi-red;
-            border-color: $bragi-red;
+            background-color: var(--color-danger);
+            border-color: var(--color-danger);
             color: #FFFFFF;
             font-weight: 600;
         }
 
-        &:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        &:disabled { opacity: 0.5; cursor: not-allowed; }
     }
 
-    .pagination-ellipsis {
-        padding: 0 0.5rem;
-        color: $light-text;
-    }
+    .pagination-ellipsis { padding: 0 0.5rem; color: var(--color-text-tertiary); }
 }
 
-// Empty State
-.library-empty {
-    padding: 4rem 2rem;
-}
+// ---- Book detail -------------------------------------------
 
-// Book Detail Page Styles
 .book-detail-page {
     padding: 0;
 
-    .book-detail-content {
-        padding: 0 1rem;
-    }
-
-    .book-detail-cover {
-        img {
-            width: 100%;
-            aspect-ratio: 1/1;
-            object-fit: cover;
-            max-width: 400px;
-            display: block;
-            margin: 0 auto;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
+    .book-detail-cover img {
+        width: 100%;
+        aspect-ratio: 1/1;
+        object-fit: cover;
+        max-width: 400px;
+        display: block;
+        margin: 0 auto;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
     }
 
     h2 {
         font-size: 2rem;
         font-weight: 700;
-        color: $light-text;
+        color: var(--color-text-primary);
         margin-bottom: 1rem;
     }
 
     .text-muted {
         font-size: 1rem;
         line-height: 1.6;
-
-        strong {
-            color: $light-text;
-            font-weight: 600;
-        }
-
-        i {
-            color: $honey-gold;
-        }
+        strong { color: var(--color-text-primary); font-weight: 600; }
+        i      { color: var(--color-info); }
     }
 
     .card {
-
-        // Detail cards (audio/publishing/file info) have uniform height
-        // Description card height is auto to accommodate varying content
-        &:not(:has(.card-text)) {
-            height: 100%;
-        }
+        &:not(:has(.card-text)) { height: 100%; }
 
         .card-title {
             font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 1rem;
-            color: $light-text;
-
-            i {
-                color: $honey-gold;
-            }
+            color: var(--color-text-primary);
+            i { color: var(--color-info); }
         }
 
-        .card-text {
-            line-height: 1.6;
-            color: $light-text;
-        }
+        .card-text { line-height: 1.6; color: var(--color-text-primary); }
 
-        ul {
-            li {
-                line-height: 1.8;
-                color: $light-text;
+        ul li {
+            line-height: 1.8;
+            color: var(--color-text-primary);
 
-                strong {
-                    font-weight: 600;
-                    margin-right: 0.5rem;
-                }
+            strong { font-weight: 600; margin-right: 0.5rem; }
 
-                code {
-                    background-color: rgba($honey-gold, 0.1);
-                    padding: 0.2rem 0.4rem;
-                    border-radius: 4px;
-                    font-size: 0.85rem;
-                    word-break: break-all;
-                }
-
-                .badge {
-                    padding: 0.35rem 0.65rem;
-                    font-weight: 500;
-                }
+            code {
+                background-color: rgba($raw-gold, 0.12);
+                padding: 0.2rem 0.4rem;
+                border-radius: var(--radius-sm);
+                font-size: 0.85rem;
+                word-break: break-all;
+                color: var(--color-text-primary);
             }
         }
     }
 }
 
+// ---- Import page -------------------------------------------
 
-// Import page selection panel
+// Full-viewport file tree (Step 1 — no card wrapper)
+.import-file-view {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-bg-primary);
+    z-index: 10;
+
+    @media (max-width: 768px) {
+        left: 0;
+        top: 60px; // mobile top nav height
+    }
+}
+
+.import-file-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 72px; // clear fixed action bar
+}
+
+// Import selection panel (Step 1 desktop sidebar)
 .import-selection-panel {
-    background-color: rgba(0, 0, 0, 0.02);
+    background-color: var(--color-bg-tertiary);
+    border-left: 1px solid var(--color-border-primary);
     overflow-y: auto;
     max-height: calc(100vh - 300px);
 }
 
-// Dark mode theme styles
-[data-theme="dark"] {
-    // Base colors
-    background-color: $dark-bg;
-    color: $dark-text;
+// Sticky action bar (shared by Step 1 + Step 2)
+// Fixed at all viewport sizes — always flush to the bottom of the viewport
+.import-action-bar {
+    position: fixed;
+    bottom: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    background-color: var(--action-bar-bg);
+    border-top: 1px solid var(--action-bar-border);
+    box-shadow: var(--action-bar-shadow);
+    padding: var(--space-3) var(--space-5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    z-index: 200;
 
-    // Body
+    @media (max-width: 768px) {
+        left: 0;
+    }
+}
+
+.import-action-bar-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+
+    // When rendered as a button
+    &.btn.btn-link {
+        color: var(--color-text-secondary);
+        &:hover { color: var(--color-text-primary); }
+    }
+}
+
+// Slide-up drawer showing selected folders
+.import-selected-drawer {
+    position: fixed;
+    left: var(--sidebar-width);
+    right: 0;
+    bottom: 64px; // sits on top of action bar
+    max-height: 50vh;
+    background-color: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border-primary);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    z-index: 195; // above file view (10), below action bar (200)
+    animation: drawerSlideUp var(--duration-normal) var(--ease-out);
+
+    @media (max-width: 768px) {
+        left: 0;
+        max-height: 65vh;
+        bottom: 60px;
+    }
+}
+
+@keyframes drawerSlideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.import-selected-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-5);
+    border-bottom: 1px solid var(--color-border-primary);
+    flex-shrink: 0;
+    color: var(--color-text-primary);
+}
+
+.import-selected-drawer-list {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.import-selected-drawer-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-3) var(--space-5);
+    border-bottom: 1px solid var(--color-border-secondary);
+    color: var(--color-text-primary);
+
+    &:last-child { border-bottom: none; }
+}
+
+// ---- Form controls -----------------------------------------
+
+.form-control,
+.form-select {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-primary);
+    color: var(--color-text-primary);
+
+    &:focus {
+        background-color: var(--color-bg-tertiary);
+        border-color: var(--color-border-focus);
+        color: var(--color-text-primary);
+        box-shadow: 0 0 0 0.25rem rgba($raw-gold, 0.20);
+    }
+
+    &::placeholder { color: var(--color-text-tertiary); }
+}
+
+.input-group-text {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-primary);
+    color: var(--color-text-secondary);
+}
+
+// Helper/hint text under form controls
+.form-text {
+    color: var(--color-text-tertiary);
+}
+
+// Radios and checkboxes — visible border + green accent when checked
+.form-check-input {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-primary);
+
+    &:checked {
+        background-color: var(--color-success);
+        border-color: var(--color-success);
+    }
+
+    &:focus {
+        border-color: var(--color-border-focus);
+        box-shadow: 0 0 0 0.25rem rgba($raw-gold, 0.20);
+    }
+}
+
+// Switch toggle — unchecked track must be visible on dark surfaces
+.form-switch .form-check-input {
+    background-color: var(--color-border-primary); // visible track when off
+
+    &:checked {
+        background-color: var(--color-success);
+        border-color: var(--color-success);
+    }
+}
+
+.form-check-label {
+    color: var(--color-text-primary);
+}
+
+// ---- List groups -------------------------------------------
+
+.list-group-item {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-primary);
+    color: var(--color-text-primary);
+}
+
+// ---- Alerts ------------------------------------------------
+
+.alert-danger {
+    background-color: var(--color-danger-subtle);
+    border-color: var(--color-danger);
+    color: var(--color-danger-text);
+}
+
+.alert-warning {
+    background-color: var(--color-info-subtle);
+    border-color: var(--color-info);
+    color: var(--color-info-text);
+}
+
+.alert-success {
+    background-color: var(--color-success-subtle);
+    border-color: var(--color-success);
+    color: var(--color-success-text);
+}
+
+// ---- Tables ------------------------------------------------
+
+.table {
+    --bs-table-color:         var(--color-text-primary);
+    --bs-table-bg:            transparent;
+    --bs-table-border-color:  var(--color-border-primary);
+    --bs-table-hover-bg:      var(--color-bg-tertiary);
+    --bs-table-striped-bg:    var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-primary);
+
+    thead th {
+        background-color: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+        border-bottom-color: var(--color-border-primary);
+    }
+
+    tbody td {
+        color: var(--color-text-primary);
+        border-color: var(--color-border-primary);
+    }
+}
+
+// ---- Modals ------------------------------------------------
+
+.modal-content {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-primary);
+    color: var(--color-text-primary);
+}
+
+.modal-header,
+.modal-footer {
+    border-color: var(--color-border-primary);
+}
+
+// ---- Buttons (outline-secondary for dark surfaces) ---------
+
+.btn-outline-secondary {
+    border-color: var(--color-border-primary);
+    color: var(--color-text-primary);
+
+    &:hover {
+        background-color: var(--color-bg-tertiary);
+        border-color: var(--color-border-focus);
+        color: var(--color-text-primary);
+    }
+}
+
+// ---- Light mode explicit reset (opt-in) --------------------
+// Bootstrap compiles with $body-color: #E2E8F0 (dark-first), so Bootstrap's
+// --bs-body-color and friends are light by default. Override them here.
+
+[data-theme="light"] {
+    // Bootstrap CSS variable overrides — must come first so components pick them up
+    --bs-body-color:           #{$raw-neutral-900};
+    --bs-body-color-rgb:       33, 37, 41;
+    --bs-body-bg:              #{$raw-neutral-0};
+    --bs-body-bg-rgb:          255, 255, 255;
+    --bs-emphasis-color:       #{$raw-neutral-900};
+    --bs-secondary-color:      #{$raw-neutral-700};
+    --bs-secondary-color-rgb:  73, 80, 87;
+    --bs-tertiary-color:       #{$raw-neutral-600};
+    --bs-tertiary-color-rgb:   108, 117, 125;
+    --bs-link-color:           #{$raw-burgundy};
+    --bs-card-bg:              #{$raw-neutral-0};
+    --bs-card-border-color:    #{$raw-neutral-200};
+    --bs-card-cap-bg:          rgba(#{$raw-gold}, 0.05);
+    --bs-border-color:         #{$raw-neutral-200};
+    --bs-border-color-translucent: rgba(0, 0, 0, 0.175);
+
+    background-color: $raw-neutral-0;
+    color: $raw-neutral-900;
+
     body {
-        background-color: $dark-bg;
-        color: $dark-text;
+        background-color: $raw-neutral-0;
+        color: $raw-neutral-900;
     }
 
-    // Main content area
     .main-content {
-        background-color: $dark-bg;
+        background-color: $raw-neutral-0;
+        color: $raw-neutral-900;
     }
 
-    // Sidebar
-    .sidebar {
-        background-color: $dark-sidebar;
-
-        .sidebar-brand {
-            border-bottom-color: rgba(255, 255, 255, 0.05);
-        }
-
-        .sidebar-footer {
-            border-top-color: rgba(255, 255, 255, 0.05);
-        }
+    // Typography — ensure all text is dark on light backgrounds
+    p, span, div, li, td, th, label, small,
+    h1, h2, h3, h4, h5, h6 {
+        color: inherit;
     }
 
-    // Mobile Top Nav
-    .mobile-top-nav {
-        background-color: $dark-sidebar;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    .text-muted,
+    .form-text {
+        color: $raw-neutral-600 !important;
     }
 
-    // Cards
-    .card {
-        background-color: $dark-card-bg;
-        border-color: $dark-border;
-        color: $dark-text;
-    }
-
-    .card-header {
-        background-color: rgba($honey-gold, 0.1);
-        border-bottom-color: $dark-border;
-        color: $dark-text;
-    }
-
-    .card-body {
-        background-color: $dark-card-bg;
-        color: $dark-text;
-    }
-
-    // Text colors
-    p,
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6,
-    span,
-    div {
-        color: $dark-text;
-    }
-
-    .text-muted {
-        color: rgba(255, 255, 255, 0.6) !important;
+    .form-label {
+        color: $raw-neutral-900;
     }
 
     // Form controls
     .form-control,
     .form-select {
-        background-color: $dark-surface;
-        border-color: $dark-border;
-        color: $dark-text;
+        background-color: $raw-neutral-0;
+        border-color: $raw-neutral-200;
+        color: $raw-neutral-900;
 
         &:focus {
-            background-color: $dark-surface;
-            border-color: $honey-gold;
-            color: $dark-text;
+            background-color: $raw-neutral-0;
+            color: $raw-neutral-900;
         }
 
-        &::placeholder {
-            color: rgba($dark-text, 0.5);
-        }
+        &::placeholder { color: $raw-neutral-600; }
     }
 
-    // Buttons
-    .btn-secondary {
-        background-color: $dark-surface;
-        border-color: $dark-border;
-        color: $dark-text;
+    .input-group-text {
+        background-color: $raw-neutral-50;
+        border-color: $raw-neutral-200;
+        color: $raw-neutral-700;
+    }
 
-        &:hover {
-            background-color: color.adjust($dark-surface, $lightness: 10%);
-            border-color: color.adjust($dark-border, $lightness: 10%);
-        }
+    // Radios and switches on light background
+    .form-check-input {
+        background-color: $raw-neutral-0;
+        border-color: $raw-neutral-300;
+    }
+
+    .form-switch .form-check-input {
+        background-color: $raw-neutral-300; // visible grey track when off
+    }
+
+    .form-check-label {
+        color: $raw-neutral-900;
+    }
+
+    // Cards
+    .card {
+        background-color: $raw-neutral-0;
+        border-color: $raw-neutral-200;
+        color: $raw-neutral-900;
+    }
+
+    .card-header {
+        background-color: rgba($raw-gold, 0.05);
+        border-bottom-color: $raw-neutral-200;
+        color: $raw-neutral-900;
+    }
+
+    .card-body {
+        background-color: $raw-neutral-0;
+        color: $raw-neutral-900;
+    }
+
+    // List groups
+    .list-group-item {
+        background-color: $raw-neutral-0;
+        border-color: $raw-neutral-200;
+        color: $raw-neutral-900;
     }
 
     // Tables
     .table {
-        --bs-table-color: #{$dark-text};
-        --bs-table-bg: transparent;
-        --bs-table-border-color: #{$dark-border};
-        --bs-table-striped-bg: #{$dark-surface};
-        --bs-table-striped-color: #{$dark-text};
-        --bs-table-active-bg: #{$dark-border};
-        --bs-table-active-color: #{$dark-text};
-        --bs-table-hover-bg: #{$dark-surface};
-        --bs-table-hover-color: #{$dark-text};
+        --bs-table-color:        #{$raw-neutral-900};
+        --bs-table-bg:           transparent;
+        --bs-table-border-color: #{$raw-neutral-200};
+        --bs-table-striped-bg:   #{$raw-neutral-50};
+        --bs-table-hover-bg:     #{$raw-neutral-50};
+        color: $raw-neutral-900;
+        border-color: $raw-neutral-200;
 
-        color: $dark-text;
-        border-color: $dark-border;
-
-        thead {
-            background-color: $dark-surface;
-            border-color: $dark-border;
-
-            th {
-                background-color: $dark-surface;
-                color: #FFFFFF;
-                border-bottom-color: $dark-border;
-            }
-        }
-
-        tbody {
-            background-color: $dark-card-bg;
-
-            tr {
-                background-color: transparent;
-                color: $dark-text;
-            }
-
-            td {
-                background-color: transparent;
-                color: $dark-text;
-                border-color: $dark-border;
-            }
-        }
-
-        // Fix for hover state
-        &.table-hover>tbody>tr:hover>* {
-            --bs-table-accent-bg: #{$dark-surface};
-            color: $dark-text;
+        thead th {
+            background-color: $raw-neutral-50;
+            color: $raw-neutral-900;
         }
     }
 
     // Modals
     .modal-content {
-        background-color: $dark-card-bg;
-        border-color: $dark-border;
+        background-color: $raw-neutral-0;
+        border-color: $raw-neutral-200;
+        color: $raw-neutral-900;
     }
 
-    .modal-header {
-        border-bottom-color: $dark-border;
-    }
-
+    .modal-header,
     .modal-footer {
-        border-top-color: $dark-border;
-    }
-
-    // Input groups (for search bars)
-    .input-group {
-        .form-control {
-            background-color: $dark-surface;
-            border-color: $dark-border;
-            color: $dark-text;
-
-            &::placeholder {
-                color: rgba($dark-text, 0.5);
-            }
-
-            &:focus {
-                background-color: $dark-surface;
-                border-color: $honey-gold;
-                color: $dark-text;
-            }
-        }
-
-        .input-group-text {
-            background-color: $dark-surface;
-            border-color: $dark-border;
-            color: $dark-text;
-        }
-
-        .btn-outline-secondary {
-            background-color: $dark-surface;
-            border-color: $dark-border;
-            color: $dark-text;
-
-            &:hover {
-                background-color: color.adjust($dark-surface, $lightness: 10%);
-                border-color: $honey-gold;
-                color: $dark-text;
-            }
-        }
-    }
-
-    .btn-outline-secondary {
-        border-color: $dark-border;
-        color: $dark-text;
-
-        &:hover {
-            background-color: $dark-surface;
-            border-color: $honey-gold;
-            color: $dark-text;
-        }
-    }
-
-    // List groups
-    .list-group-item {
-        background-color: $dark-card-bg;
-        border-color: $dark-border;
-        color: $dark-text;
-
-        &:hover {
-            background-color: color.adjust($dark-card-bg, $lightness: 5%);
-        }
+        border-color: $raw-neutral-200;
     }
 
     // Alerts
     .alert-danger {
-        background-color: rgba($bragi-red, 0.2);
-        border-color: $bragi-red;
-        color: lighten($bragi-red, 40%);
+        background-color: rgba($raw-burgundy, 0.08);
+        border-color: $raw-burgundy;
+        color: $raw-burgundy;
     }
 
     .alert-warning {
-        background-color: rgba($honey-gold, 0.2);
-        border-color: $honey-gold;
-        color: lighten($honey-gold, 20%);
+        background-color: rgba($raw-gold, 0.10);
+        border-color: $raw-gold-accessible;
+        color: $raw-gold-accessible;
     }
 
-    // Page Header (dark mode)
+    .alert-success {
+        background-color: rgba($raw-green, 0.08);
+        border-color: $raw-green;
+        color: $raw-green;
+    }
+
+    // Pagination
+    .pagination-button {
+        background-color: $raw-neutral-0;
+        border-color: $raw-neutral-200;
+        color: $raw-neutral-900;
+    }
+
+    // Page header
     .page-header {
-        background-color: $dark-bg;
-        border-bottom-color: $dark-border;
-
-        .library-search .btn-link {
-            color: $dark-text;
-        }
-
-        .library-count {
-            color: $honey-gold;
-        }
+        background-color: $raw-neutral-0;
+        border-bottom-color: $raw-neutral-200;
     }
 
-    // Library Book Cards (dark mode)
-    .library-book-card {
-        .library-book-title {
-            color: $dark-text;
-        }
-
-        &:hover .library-book-title {
-            color: color.adjust($bragi-red, $lightness: 20%);
-        }
+    // Import action bar
+    .import-action-bar {
+        background-color: $raw-neutral-0;
+        border-top-color: $raw-neutral-200;
     }
 
-    // Book Detail Page (dark mode)
-    .book-detail-page {
-        h2 {
-            color: $dark-text;
-        }
+    // Outline secondary buttons
+    .btn-outline-secondary {
+        border-color: $raw-neutral-300;
+        color: $raw-neutral-700;
 
-        .text-muted {
-            color: $dark-text !important;
-
-            strong {
-                color: $dark-text;
-            }
-        }
-
-        .card {
-            .card-title {
-                color: $dark-text;
-            }
-
-            .card-text {
-                color: $dark-text;
-            }
-
-            ul li {
-                color: $dark-text;
-
-                code {
-                    background-color: rgba($honey-gold, 0.15);
-                    color: $dark-text;
-                }
-            }
-        }
-    }
-
-    // Import page selection panel (dark mode)
-    .import-selection-panel {
-        background-color: rgba(255, 255, 255, 0.03);
-    }
-
-    // Pagination (dark mode)
-    .pagination {
-        .pagination-button {
-            background-color: $dark-surface;
-            border-color: $dark-border;
-            color: $dark-text;
-
-            &:hover:not(:disabled) {
-                background-color: rgba($honey-gold, 0.2);
-                border-color: $honey-gold;
-                color: $honey-gold;
-            }
-
-            &.active {
-                background-color: $bragi-red;
-                border-color: $bragi-red;
-                color: #FFFFFF;
-            }
-        }
-
-        .pagination-ellipsis {
-            color: $dark-text;
+        &:hover {
+            background-color: $raw-neutral-100;
+            border-color: $raw-neutral-300;
+            color: $raw-neutral-900;
         }
     }
 }
 
-// Light mode explicit styles (default)
-[data-theme="light"] {
-    background-color: $light-bg;
-    color: $light-text;
+// ---- Reduced motion ----------------------------------------
 
-    body {
-        background-color: $light-bg;
-        color: $light-text;
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 }

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -107,10 +108,12 @@ class VersionsAPI(JsonLoginRequiredMixin, View):
     def get(self, request):
         try:
             try:
-                m4b_version = subprocess.check_output(
+                raw = subprocess.check_output(
                     ['m4b-merge', '--version'],
                     stderr=subprocess.STDOUT
                 ).decode().strip()
+                m = re.search(r'(\d+\.\d+[\w.\-]*)', raw)
+                m4b_version = m.group(1) if m else raw
             except Exception:
                 m4b_version = 'unknown'
             return JsonResponse({

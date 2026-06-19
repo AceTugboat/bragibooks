@@ -1,0 +1,235 @@
+// Bragi Books — Design Tokens
+// Philosophy: Functional Warmth
+// Usage: @import "./tokens" in styles.scss (before Bootstrap overrides)
+// No @use rules — this file is @import-ed, not used as a module.
+//
+// SEMANTIC COLOR ROLES (enforced):
+//   Gold  (#D8A13F) → informational / status — NEVER on action buttons
+//   Green (#184A3A) → success / confirm / constructive primary action
+//   Red   (#8E2F3A) → destructive / error / alert
+//   Slate (#2C3E50) → navigation chrome (sidebar, login background)
+
+// ============================================================
+// RAW PALETTE — never reference directly in components
+// ============================================================
+
+$raw-burgundy:        #8E2F3A;
+$raw-burgundy-light:  #C04050;    // Red text/icons ON dark backgrounds
+$raw-gold:            #D8A13F;
+$raw-gold-accessible: #A8711A;    // Gold text ON light backgrounds (4.5:1)
+$raw-green:           #184A3A;
+$raw-green-hover:     #1F5E49;    // Slightly lighter hover state
+$raw-green-light:     #2D7A5F;    // Green text/icons ON dark backgrounds
+$raw-slate:           #2C3E50;    // Sidebar / login bg
+$raw-slate-dark:      #1A2535;    // Sidebar / login bg (dark mode)
+
+$raw-neutral-0:   #FFFFFF;
+$raw-neutral-50:  #F7F8FA;
+$raw-neutral-100: #ECEEF2;
+$raw-neutral-200: #DEE2E6;
+$raw-neutral-300: #CDD2DA;
+$raw-neutral-600: #6C757D;
+$raw-neutral-700: #495057;
+$raw-neutral-900: #212529;
+
+// Dark surfaces — warm-violet tint reads more intentional than neutral grey
+$raw-dark-0:   #0E1118;    // Page background
+$raw-dark-100: #161B27;    // Card / panel
+$raw-dark-200: #1E2438;    // Elevated surface
+$raw-dark-300: #252C40;    // Input / well
+$raw-dark-400: #323B54;    // Border
+$raw-dark-500: #4A556E;    // Disabled / subtle
+
+
+// ============================================================
+// SEMANTIC CSS CUSTOM PROPERTIES — Light mode (base)
+// ============================================================
+
+:root {
+  // Backgrounds
+  --color-bg-primary:    #{$raw-neutral-0};
+  --color-bg-secondary:  #{$raw-neutral-50};
+  --color-bg-tertiary:   #{$raw-neutral-100};
+  --color-bg-sidebar:    #{$raw-slate};
+  --color-bg-login:      #{$raw-slate};
+
+  // Text
+  --color-text-primary:   #{$raw-neutral-900};
+  --color-text-secondary: #{$raw-neutral-700};
+  --color-text-tertiary:  #{$raw-neutral-600};
+  --color-text-inverse:   #{$raw-neutral-0};
+  --color-text-on-dark:   rgba(255, 255, 255, 0.85);
+
+  // Borders
+  --color-border-primary: #{$raw-neutral-200};
+  --color-border-subtle:  #{$raw-neutral-100};
+  --color-border-focus:   #{$raw-gold};
+
+  // Gold = informational / status
+  --color-info:           #{$raw-gold};
+  --color-info-text:      #{$raw-gold-accessible};
+  --color-info-subtle:    rgba(216, 161, 63, 0.12);
+
+  // Green = success / confirm / constructive
+  --color-success:        #{$raw-green};
+  --color-success-hover:  #{$raw-green-hover};
+  --color-success-text:   #{$raw-green-light};
+  --color-success-subtle: rgba(24, 74, 58, 0.10);
+
+  // Red = destructive / error / alert
+  --color-danger:         #{$raw-burgundy};
+  --color-danger-hover:   #72232C;
+  --color-danger-text:    #{$raw-burgundy};
+  --color-danger-subtle:  rgba(142, 47, 58, 0.10);
+
+  // Status aliases
+  --color-status-processing: var(--color-info);
+  --color-status-done:       var(--color-success);
+  --color-status-error:      var(--color-danger);
+
+  // Overlay / shadow
+  --color-overlay: rgba(0, 0, 0, 0.50);
+  --color-shadow:  rgba(0, 0, 0, 0.10);
+
+  // Spacing (4px base)
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  // Type scale
+  --font-size-xs:   0.75rem;
+  --font-size-sm:   0.875rem;
+  --font-size-base: 1rem;
+  --font-size-md:   1.125rem;
+  --font-size-lg:   1.25rem;
+  --font-size-xl:   1.5rem;
+  --font-size-2xl:  1.875rem;
+  --font-size-3xl:  2.25rem;
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  --line-height-tight:   1.2;
+  --line-height-normal:  1.5;
+  --line-height-relaxed: 1.7;
+
+  --letter-spacing-tight:  -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide:   0.06em;
+
+  // Shape
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   10px;
+  --radius-full: 9999px;
+
+  // Shadow
+  --shadow-sm:    0 1px 3px var(--color-shadow);
+  --shadow-md:    0 2px 8px var(--color-shadow);
+  --shadow-lg:    0 8px 32px var(--color-shadow);
+  --shadow-login: 0 12px 40px rgba(0, 0, 0, 0.35);
+
+  // Layout
+  --sidebar-width: 250px;
+
+  // Motion
+  --duration-instant: 50ms;
+  --duration-fast:    150ms;
+  --duration-normal:  250ms;
+  --duration-slow:    400ms;
+
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:     cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  // Component tokens
+  --sidebar-bg:             var(--color-bg-sidebar);
+  --sidebar-item-hover-bg:  rgba(255, 255, 255, 0.10);
+  --sidebar-item-active-bg: rgba(255, 255, 255, 0.15);
+  --sidebar-active-accent:  var(--color-info);
+
+  --badge-processing-bg:    var(--color-info-subtle);
+  --badge-processing-text:  var(--color-info-text);
+  --badge-done-bg:          var(--color-success-subtle);
+  --badge-done-text:        var(--color-success-text);
+  --badge-error-bg:         var(--color-danger-subtle);
+  --badge-error-text:       var(--color-danger-text);
+
+  --action-bar-bg:          var(--color-bg-secondary);
+  --action-bar-border:      var(--color-border-primary);
+  --action-bar-shadow:      0 -2px 12px var(--color-shadow);
+
+  --login-page-bg:          var(--color-bg-sidebar);
+  --login-card-shadow:      var(--shadow-login);
+}
+
+
+// ============================================================
+// DARK MODE
+// Values duplicated (no mixin — avoids @use dependency)
+// ============================================================
+
+[data-theme="dark"] {
+  --color-bg-primary:     #{$raw-dark-0};
+  --color-bg-secondary:   #{$raw-dark-100};
+  --color-bg-tertiary:    #{$raw-dark-300};
+  --color-bg-sidebar:     #{$raw-slate-dark};
+  --color-bg-login:       #{$raw-slate-dark};
+
+  --color-text-primary:   #E2E8F0;
+  --color-text-secondary: #94A3B8;
+  --color-text-tertiary:  #64748B;
+  --color-text-inverse:   #{$raw-neutral-900};
+
+  --color-border-primary: #{$raw-dark-400};
+  --color-border-subtle:  #{$raw-dark-300};
+
+  --color-info-text:      #{$raw-gold};
+  --color-success-text:   #{$raw-green-light};
+  --color-danger-text:    #{$raw-burgundy-light};
+
+  --color-info-subtle:    rgba(216, 161, 63, 0.15);
+  --color-success-subtle: rgba(24, 74, 58, 0.22);
+  --color-danger-subtle:  rgba(142, 47, 58, 0.22);
+
+  --color-overlay:        rgba(0, 0, 0, 0.65);
+  --color-shadow:         rgba(0, 0, 0, 0.45);
+  --shadow-login:         0 12px 40px rgba(0, 0, 0, 0.60);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg-primary:     #{$raw-dark-0};
+    --color-bg-secondary:   #{$raw-dark-100};
+    --color-bg-tertiary:    #{$raw-dark-300};
+    --color-bg-sidebar:     #{$raw-slate-dark};
+    --color-bg-login:       #{$raw-slate-dark};
+
+    --color-text-primary:   #E2E8F0;
+    --color-text-secondary: #94A3B8;
+    --color-text-tertiary:  #64748B;
+    --color-text-inverse:   #{$raw-neutral-900};
+
+    --color-border-primary: #{$raw-dark-400};
+    --color-border-subtle:  #{$raw-dark-300};
+
+    --color-info-text:      #{$raw-gold};
+    --color-success-text:   #{$raw-green-light};
+    --color-danger-text:    #{$raw-burgundy-light};
+
+    --color-info-subtle:    rgba(216, 161, 63, 0.15);
+    --color-success-subtle: rgba(24, 74, 58, 0.22);
+    --color-danger-subtle:  rgba(142, 47, 58, 0.22);
+
+    --color-overlay:        rgba(0, 0, 0, 0.65);
+    --color-shadow:         rgba(0, 0, 0, 0.45);
+    --shadow-login:         0 12px 40px rgba(0, 0, 0, 0.60);
+  }
+}

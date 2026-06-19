@@ -73,7 +73,7 @@ const AboutPage: React.FC = () => {
                                 </div>
                                 <div className="col-md-4 mb-3">
                                     <div className="small">m4b-merge</div>
-                                    <div className="fw-bold">v{versions.m4b_merge_version}</div>
+                                    <div className="fw-bold">{versions.m4b_merge_version === 'unknown' ? 'Not detected' : `v${versions.m4b_merge_version}`}</div>
                                 </div>
                             </div>
                         </div>

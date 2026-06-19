@@ -11,10 +11,13 @@ export interface Book {
     publisher: string;
     lang: string;
     runtime_length_minutes: number;
+    audio_bitrate: number | null;
     format_type: string;
     converted: boolean;
     src_path: string;
     dest_path: string;
+    output_file_exists: boolean;
+    file_size: number | null;
     created_at: string;
     updated_at: string;
     status: Status;

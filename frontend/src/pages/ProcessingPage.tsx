@@ -128,7 +128,7 @@ const ProcessingPage: React.FC = () => {
                                     </div>
                                     {lastLine && (
                                         <div className="text-muted small mt-1">
-                                            <i className="fas fa-circle-info me-1" />
+                                            <i className="fas fa-circle-dot me-1" />
                                             {lastLine}
                                         </div>
                                     )}
@@ -246,7 +246,7 @@ const ProcessingPage: React.FC = () => {
                                                 onFocus={() => setReprocessingId(book.id)}
                                             />
                                             <button
-                                                className="btn btn-sm btn-outline-primary"
+                                                className="btn btn-sm btn-success"
                                                 onClick={() => handleReprocess(book.id, reprocessAsin || undefined)}
                                             >
                                                 {reprocessingId === book.id ? (

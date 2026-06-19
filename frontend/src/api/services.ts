@@ -66,8 +66,8 @@ export const bookApi = {
         return response.data.input_dirs;
     },
 
-    delete: async (id: string | number): Promise<void> => {
-        await apiClient.delete(`/api/books/${id}/`);
+    delete: async (id: string | number, deleteFiles = false): Promise<void> => {
+        await apiClient.delete(`/api/books/${id}/`, { data: { delete_files: deleteFiles } });
     },
 
     reprocess: async (id: string | number, asin?: string): Promise<void> => {
@@ -76,7 +76,7 @@ export const bookApi = {
 
     updateMetadata: async (id: string | number, data: {
         title?: string; author?: string; narrator?: string;
-        year?: number; description?: string; genre?: string;
+        year?: number; description?: string; genre?: string; series?: string;
     }): Promise<Book> => {
         const response = await apiClient.put<Book>(`/api/books/${id}/metadata/`, data);
         return response.data;
@@ -87,8 +87,9 @@ export const bookApi = {
         return response.data;
     },
 
-    saveChapters: async (id: string | number, chapters: Chapter[]): Promise<void> => {
-        await apiClient.put(`/api/books/${id}/chapters/`, chapters);
+    saveChapters: async (id: string | number, chapters: Chapter[]): Promise<{ message?: string } | void> => {
+        const res = await apiClient.put<{ saved?: boolean; embedded?: boolean; message?: string }>(`/api/books/${id}/chapters/`, chapters);
+        return res.data;
     },
 
     replaceCoverUpload: async (id: string | number, file: File): Promise<void> => {
