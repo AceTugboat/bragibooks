@@ -12,6 +12,11 @@ interface AsinCard {
     selectedAsin: string;
     manualAsin: string;
     imageUrl: string;
+    searchOpen: boolean;
+    searchTitle: string;
+    searchAuthor: string;
+    searchKeywords: string;
+    customSearching: boolean;
 }
 
 const FALLBACK_IMAGE = '/static/images/cover_not_available.jpg';
@@ -51,6 +56,11 @@ const ImportPage: React.FC = () => {
             selectedAsin: '',
             manualAsin: '',
             imageUrl: FALLBACK_IMAGE,
+            searchOpen: false,
+            searchTitle: '',
+            searchAuthor: '',
+            searchKeywords: '',
+            customSearching: false,
         }));
         setCards(initial);
         setStep(2);
@@ -106,6 +116,56 @@ const ImportPage: React.FC = () => {
 
     const handleRemove = (index: number) => {
         setCards(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const toggleSearch = (index: number) => {
+        setCards(prev => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], searchOpen: !updated[index].searchOpen };
+            return updated;
+        });
+    };
+
+    const handleSearchFieldChange = (index: number, field: 'searchTitle' | 'searchAuthor' | 'searchKeywords', value: string) => {
+        setCards(prev => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], [field]: value };
+            return updated;
+        });
+    };
+
+    const handleCustomSearch = async (index: number) => {
+        const card = cards[index];
+        setCards(prev => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], customSearching: true };
+            return updated;
+        });
+        try {
+            const results = await asinSearchApi.search({
+                title: card.searchTitle || undefined,
+                author: card.searchAuthor || undefined,
+                keywords: card.searchKeywords || undefined,
+            });
+            setCards(prev => {
+                const updated = [...prev];
+                updated[index] = {
+                    ...updated[index],
+                    customSearching: false,
+                    options: results,
+                    selectedAsin: results.length > 0 ? results[0].asin : '',
+                    imageUrl: results.length > 0 ? (results[0].image_link?.[0] ?? FALLBACK_IMAGE) : FALLBACK_IMAGE,
+                    searchOpen: false,
+                };
+                return updated;
+            });
+        } catch {
+            setCards(prev => {
+                const updated = [...prev];
+                updated[index] = { ...updated[index], customSearching: false };
+                return updated;
+            });
+        }
     };
 
     const resolvedAsin = (card: AsinCard) =>
@@ -304,6 +364,65 @@ const ImportPage: React.FC = () => {
                                                     value={card.manualAsin}
                                                     onChange={e => handleManualAsinChange(index, e.target.value)}
                                                 />
+                                            )}
+
+                                            {/* Custom search toggle */}
+                                            <button
+                                                type="button"
+                                                className="btn btn-link btn-sm p-0 text-start"
+                                                style={{ color: 'var(--color-text-tertiary)', fontSize: '0.78rem' }}
+                                                onClick={() => toggleSearch(index)}
+                                            >
+                                                <i className={`fas fa-magnifying-glass me-1`} />
+                                                {card.searchOpen ? 'Hide search' : 'Search Audible…'}
+                                            </button>
+
+                                            {card.searchOpen && (
+                                                <div className="border rounded p-2 mt-1" style={{ background: 'var(--color-bg-tertiary)' }}>
+                                                    <div className="row g-2 mb-2">
+                                                        <div className="col-12 col-sm-4">
+                                                            <input
+                                                                type="text"
+                                                                className="form-control form-control-sm"
+                                                                placeholder="Title"
+                                                                value={card.searchTitle}
+                                                                onChange={e => handleSearchFieldChange(index, 'searchTitle', e.target.value)}
+                                                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCustomSearch(index))}
+                                                            />
+                                                        </div>
+                                                        <div className="col-12 col-sm-4">
+                                                            <input
+                                                                type="text"
+                                                                className="form-control form-control-sm"
+                                                                placeholder="Author"
+                                                                value={card.searchAuthor}
+                                                                onChange={e => handleSearchFieldChange(index, 'searchAuthor', e.target.value)}
+                                                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCustomSearch(index))}
+                                                            />
+                                                        </div>
+                                                        <div className="col-12 col-sm-4">
+                                                            <input
+                                                                type="text"
+                                                                className="form-control form-control-sm"
+                                                                placeholder="Keywords"
+                                                                value={card.searchKeywords}
+                                                                onChange={e => handleSearchFieldChange(index, 'searchKeywords', e.target.value)}
+                                                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCustomSearch(index))}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm btn-primary"
+                                                        disabled={card.customSearching || (!card.searchTitle && !card.searchAuthor && !card.searchKeywords)}
+                                                        onClick={() => handleCustomSearch(index)}
+                                                    >
+                                                        {card.customSearching
+                                                            ? <><span className="spinner-border spinner-border-sm me-1" role="status" />Searching…</>
+                                                            : <><i className="fas fa-magnifying-glass me-1" />Search</>
+                                                        }
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     )}
