@@ -129,7 +129,7 @@ class BookDetailAPI(JsonLoginRequiredMixin, View):
                     setting = Setting.objects.get()
                     output_root = Path(setting.output_directory).resolve()
                     resolved = book_folder.resolve()
-                    if resolved != output_root and str(resolved).startswith(str(output_root)):
+                    if resolved != output_root and resolved.is_relative_to(output_root):
                         shutil.rmtree(book_folder, ignore_errors=True)
                 except Setting.DoesNotExist:
                     pass
@@ -277,7 +277,7 @@ class BookChaptersAPI(JsonLoginRequiredMixin, View):
         try:
             setting = Setting.objects.get()
             output_root = Path(setting.output_directory).resolve()
-            if not str(chapter_file.resolve()).startswith(str(output_root)):
+            if not chapter_file.resolve().is_relative_to(output_root):
                 return JsonResponse({'error': 'Invalid output path'}, status=400)
         except Setting.DoesNotExist:
             pass
