@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FileExplorer from '../components/FileExplorer';
 import { directoryApi, asinSearchApi, bookApi, getErrorMessage } from '../api/services';
+import { useData } from '../context/DataContext';
 import type { FileItem, AsinSearchResult } from '../types';
 
 interface AsinCard {
@@ -17,6 +18,7 @@ const FALLBACK_IMAGE = '/static/images/cover_not_available.jpg';
 
 const ImportPage: React.FC = () => {
     const navigate = useNavigate();
+    const { refreshBooks } = useData();
 
     const [step, setStep] = useState<1 | 2>(1);
     const [contents, setContents] = useState<FileItem[]>([]);
@@ -120,6 +122,7 @@ const ImportPage: React.FC = () => {
             const matches: Record<string, string> = {};
             cards.forEach(c => { matches[c.srcPath] = resolvedAsin(c); });
             await bookApi.matchAsin(matches);
+            await refreshBooks();
             navigate('/processing');
         } catch (err) {
             setError(getErrorMessage(err));
