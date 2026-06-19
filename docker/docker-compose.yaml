@@ -1,0 +1,71 @@
+services:
+  # Development: Django runserver + built frontend assets + task worker in one container
+  bragi-dev:
+    image: bragibooks
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    container_name: bragibooks
+    command: dev
+    profiles:
+      - development
+    environment:
+      - LOG_LEVEL=DEBUG
+      - DEBUG=True
+      - UID=1001
+      - GID=1001
+      - RUN_WORKER=true
+    volumes:
+      - $HOME/Projects/bragibooks:/home/app/web
+      - $HOME/Projects/demo/config:/config
+      - $HOME/Projects/demo/completed/audiobooks:/input
+      - $HOME/Projects/demo/output/audiobooks:/output
+      - $HOME/Projects/demo/converted:/done
+    ports:
+      - 8000:8000
+    restart: unless-stopped
+
+  # Production web server (Gunicorn)
+  # DATABASE_URL defaults to SQLite — no config needed.
+  # To use PostgreSQL, uncomment DATABASE_URL and add a db service (see README).
+  bragi:
+    image: acetugboat/bragibooks
+    container_name: bragibooks
+    command: prod
+    profiles:
+      - production
+    environment:
+      - LOG_LEVEL=INFO
+      - DEBUG=False
+      - UID=1001
+      - GID=1001
+      - RUN_WORKER=false
+      # - DATABASE_URL=postgres://bragibooks:password@db:5432/bragibooks
+      # - PASSKEY_RP_ID=bragibooks.mydomain.com
+      # - PASSKEY_ORIGIN=https://bragibooks.mydomain.com
+    volumes:
+      - /downloads:/downloads
+      - /audiobooks:/audiobooks
+      - /config:/config
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  # Production task queue worker (optional — or set RUN_WORKER=true on the bragi service)
+  worker:
+    image: acetugboat/bragibooks
+    container_name: bragibooks-worker
+    command: worker
+    profiles:
+      - production
+    environment:
+      - LOG_LEVEL=INFO
+      - DEBUG=False
+      - UID=1001
+      - GID=1001
+      # - DATABASE_URL=postgres://bragibooks:password@db:5432/bragibooks
+    volumes:
+      - /downloads:/downloads
+      - /audiobooks:/audiobooks
+      - /config:/config
+    restart: unless-stopped

@@ -23,7 +23,7 @@ if not os.path.exists(SECRET_PATH):
     f = open(SECRET_PATH, "w")
     f.write(get_random_secret_key())
     f.close()
-    python_bin = shutil.which('m4b-tool')
+    python_bin = sys.executable
     subprocess.run([python_bin, "manage.py", "makemigrations"])
     subprocess.run([python_bin, "manage.py", "migrate"])
 

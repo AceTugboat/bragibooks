@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -15,11 +16,130 @@ from importer.models import (Author, Book, Narrator, Setting, Status,
 logger = logging.getLogger(__name__)
 
 
+class BragiM4bMerge(m4b_helper.M4bMerge):
+    """M4bMerge subclass that applies Bragi's Setting overrides."""
+
+    def __init__(self, input_data, metadata, original_path, chapters=None, setting=None, book=None):
+        super().__init__(input_data, metadata, original_path, chapters)
+        self._setting = setting
+        self._book = book
+        self._log_buffer = []
+        self._last_flush = datetime.min
+
+    def _log_subprocess_line(self, line):
+        self._log_buffer.append(line)
+        now = datetime.now()
+        if (now - self._last_flush).total_seconds() >= 2:
+            self._flush_log_buffer()
+            self._last_flush = now
+
+    def _flush_log_buffer(self):
+        if not self._log_buffer or not self._book:
+            self._log_buffer = []
+            return
+        chunk = '\n'.join(self._log_buffer)
+        self._book.status.message = (self._book.status.message + '\n' + chunk).lstrip('\n')
+        self._book.status.save(update_fields=['message'])
+        self._log_buffer = []
+
+    def run_merge(self):
+        original_call = subprocess.call
+
+        def capturing_call(args, **kwargs):
+            logger.info(f"M4B command: {args}")
+            kwargs.pop('stdout', None)
+            kwargs.pop('stderr', None)
+            proc = subprocess.Popen(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                **kwargs,
+            )
+            for line in proc.stdout:
+                line = line.rstrip('\n')
+                if line:
+                    self._log_subprocess_line(line)
+            proc.wait()
+            self._flush_log_buffer()
+            return proc.returncode
+
+        subprocess.call = capturing_call
+        try:
+            super().run_merge()
+        finally:
+            subprocess.call = original_call
+            self._flush_log_buffer()
+
+    def prepare_command_args(self):
+        super().prepare_command_args()
+        if not self._setting:
+            return
+        # ignore_source_tags defaults False in Setting; remove parent's flag unless True
+        if not self._setting.ignore_source_tags:
+            try:
+                self.processing_args.remove('--ignore-source-tags')
+            except ValueError:
+                pass
+        # skip_conversion forces --no-conversion for all input types
+        if self._setting.skip_conversion and '--no-conversion' not in self.processing_args:
+            self.processing_args.append('--no-conversion')
+
+    def find_bitrate(self, file_input):
+        if self._setting and self._setting.audio_bitrate:
+            return self._setting.audio_bitrate * 1000
+        return super().find_bitrate(file_input)
+
+    def find_samplerate(self, file_input):
+        if self._setting and self._setting.audio_samplerate:
+            return self._setting.audio_samplerate
+        return super().find_samplerate(file_input)
+
+    def fix_chapters(self):
+        if self._setting and self._setting.chapter_source == 'source_file':
+            saved_chapters = self.chapters
+            self.chapters = None
+            super().fix_chapters()
+            self.chapters = saved_chapters
+            if self._setting.chapter_name_format:
+                self._reformat_chapter_names(self._setting.chapter_name_format)
+        else:
+            super().fix_chapters()
+
+    def _reformat_chapter_names(self, fmt: str):
+        chapter_file = f"{self.book_output}.chapters.txt"
+        try:
+            with open(chapter_file) as f:
+                lines = f.readlines()
+            new_lines = []
+            counter = 0
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith('#') or not stripped:
+                    new_lines.append(line)
+                    continue
+                counter += 1
+                timestamp = stripped[:13]
+                new_lines.append(f"{timestamp}{fmt.format(num=counter)}\n")
+            with open(chapter_file, 'w') as f:
+                f.writelines(new_lines)
+        except (OSError, KeyError):
+            logger.warning("Could not reformat chapter names: %s", chapter_file)
+
+
+def _update_status_message(book, message):
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%H:%M:%S')
+    line = f"[{timestamp}] {message}"
+    book.status.message = (book.status.message + '\n' + line).lstrip('\n')
+    book.status.save(update_fields=['message'])
+
+
 def set_configs():
-    existing_settings = Setting.objects.first()
+    existing_settings = Setting.load()
     if existing_settings:
         config.api_url = existing_settings.api_url
-        config.junk_dir = existing_settings.completed_directory
+        config.junk_dir = existing_settings.archive_directory  # m4b_merge's name for the archive/source directory
         config.num_cpus = (
             existing_settings.num_cpus if existing_settings.num_cpus > 0
             else os.cpu_count()
@@ -37,14 +157,18 @@ def run_m4b_merge(asin: str):
 
     # Log all Settings
     logger.debug(f'Using API URL: {config.api_url}')
-    logger.debug(f'Using junk path: {config.junk_dir}')
+    logger.debug(f'Using archive path: {config.junk_dir}')
     logger.debug(f'Using CPU cores: {config.num_cpus}')
     logger.debug(f'Using output path: {config.output}')
     logger.debug(f'Using output format: {config.path_format}')
 
     book = Book.objects.get(asin=asin)
+    book.status.message = ""
+    book.status.save(update_fields=['message'])
+    setting = Setting.load()
     logger.info(
         f"{'-' * 15} Starting to process {asin}: {book.title} {'-' * 15}")
+    _update_status_message(book, "Preparing: reading input files…")
 
     input_data = helpers.get_directory(Path(book.src_path))
     if not input_data:
@@ -57,36 +181,56 @@ def run_m4b_merge(asin: str):
 
     audible = audible_helper.BookData(asin)
 
-    # Process metadata and run components to merge files
-    m4b = m4b_helper.M4bMerge(
-        input_data,
-        audible.fetch_api_data(config.api_url),
-        Path(book.src_path),
-        audible.get_chapters()
-    )
-
     try:
+        _update_status_message(book, "Fetching metadata from Audible…")
+        metadata = audible.fetch_api_data(config.api_url)
+
+        _update_status_message(book, "Loading chapters…")
+        chapters = audible.get_chapters()
+        if setting and setting.chapter_source == 'source_file':
+            chapters = None
+
+        m4b = BragiM4bMerge(
+            input_data,
+            metadata,
+            Path(book.src_path),
+            chapters,
+            setting=setting,
+            book=book,
+        )
+
+        _update_status_message(book, "Merging audio files (this may take a while)…")
         logger.info(f"Processing {book.title}")
         m4b.run_merge()
     except Exception as e:
         logger.error(f"Error occured while merging '{input_data}: {e}'")
         book.status.status = StatusChoices.ERROR
         message = str(e) + "\n" + \
-            traceback.format_exc() if settings.DEBUG else e
+            traceback.format_exc() if settings.DEBUG else str(e)
         book.status.message = message
         book.status.save()
         return
 
-    book.dest_path = Path(
-        f"\""
-        f"{m4b.book_output}/"
-        f"{audible.fetch_api_data(config.api_url)['authors'][0]}/"
-        f"{book.title}/"
-        f"{book.title}.m4b"
-        f"\""
-    )
+    # Re-fetch status in case user cancelled while m4b-tool was running
+    book.status.refresh_from_db()
+    if book.status.status != StatusChoices.PROCESSING:
+        logger.info("Book %s was cancelled during processing, skipping DONE", asin)
+        return
+
+    # m4b-tool can fail internally without raising a Python exception.
+    # Verify the output file was actually produced before marking as DONE.
+    expected_output = Path(f"{m4b.book_output}.m4b")
+    if not expected_output.exists():
+        logger.error(f"Merge appeared to succeed but output file is missing: {expected_output}")
+        book.status.status = StatusChoices.ERROR
+        book.status.message = (book.status.message + "\nMerge failed: output file was not created.").lstrip('\n')
+        book.status.save()
+        return
+
+    book.dest_path = f"{m4b.book_output}.m4b"
     book.status.status = StatusChoices.DONE
-    book.status.save()
+    book.status.save(update_fields=['status'])
+    book.save(update_fields=['dest_path'])
     logger.info(f"{'-' * 15} Done processing {asin} {'-' * 15}")
 
 

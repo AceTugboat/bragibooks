@@ -1,4 +1,8 @@
+docs/
 .python-version
+.env
+.claude/
+.venv/
 .vscode
 /static/
 __pycache__/
@@ -8,3 +12,5 @@ venv/
 demo/
 .DS_Store
 admin/
+.idea
+.design/

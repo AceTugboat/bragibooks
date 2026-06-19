@@ -1,9 +1,59 @@
 from django.urls import path, re_path
-from . import views
-urlpatterns = [
-    path('', views.ImportView.as_view(), name='import'),
-    path('match', views.MatchView.as_view(), name='match'),
-    re_path(r'^asin-search/$', views.AsinSearch.as_view(), name='asin-search'),
-    path('books', views.BookListView.as_view(), name='books'),
-    path('setting', views.SettingView.as_view(), name='setting'),
+
+from .api.auth import (
+    CheckSetupAPI, CurrentUserAPI, InitialSetupAPI, LoginAPI, LogoutAPI,
+    PasskeyDeleteAPI, PasskeyListAPI,
+    PasskeyLoginBeginAPI, PasskeyLoginCompleteAPI,
+    PasskeyRegisterBeginAPI, PasskeyRegisterCompleteAPI,
+)
+from .api.books import BookCancelAPI, BookDetailAPI, BookMetadataAPI, BookReprocessAPI, BooksListAPI, BookChaptersAPI, BookCoverAPI, LibraryBooksAPI
+from .api.config import SettingsAPI, SettingsVerifyAPI, VersionsAPI
+from .api.import_pipeline import AsinSearchAPI, DirectoryListAPI, ImportStartAPI, MatchAPI
+from .api.users import UserDetailAPI, UsersListAPI
+from .spa_view import SPAView
+
+api_patterns = [
+    # Auth
+    path('api/auth/login', LoginAPI.as_view(), name='api-login'),
+    path('api/auth/logout', LogoutAPI.as_view(), name='api-logout'),
+    path('api/auth/user', CurrentUserAPI.as_view(), name='api-current-user'),
+    path('api/auth/check-setup', CheckSetupAPI.as_view(), name='api-check-setup'),
+    path('api/auth/setup', InitialSetupAPI.as_view(), name='api-setup'),
+
+    # Passkeys
+    path('api/auth/passkey/register/begin/', PasskeyRegisterBeginAPI.as_view(), name='api-passkey-register-begin'),
+    path('api/auth/passkey/register/complete/', PasskeyRegisterCompleteAPI.as_view(), name='api-passkey-register-complete'),
+    path('api/auth/passkey/login/begin/', PasskeyLoginBeginAPI.as_view(), name='api-passkey-login-begin'),
+    path('api/auth/passkey/login/complete/', PasskeyLoginCompleteAPI.as_view(), name='api-passkey-login-complete'),
+    path('api/auth/passkeys/', PasskeyListAPI.as_view(), name='api-passkeys-list'),
+    path('api/auth/passkeys/<int:pk>/', PasskeyDeleteAPI.as_view(), name='api-passkey-delete'),
+
+    # Books
+    path('api/books/library/', LibraryBooksAPI.as_view(), name='api-books-library'),
+    path('api/books/', BooksListAPI.as_view(), name='api-books'),
+    path('api/books/<int:pk>/', BookDetailAPI.as_view(), name='api-book-detail'),
+    path('api/books/<int:pk>/cancel/', BookCancelAPI.as_view(), name='api-book-cancel'),
+    path('api/books/<int:pk>/reprocess/', BookReprocessAPI.as_view(), name='api-book-reprocess'),
+    path('api/books/<int:pk>/metadata/', BookMetadataAPI.as_view(), name='api-book-metadata'),
+    path('api/books/<int:pk>/chapters/', BookChaptersAPI.as_view(), name='api-book-chapters'),
+    path('api/books/<int:pk>/cover/', BookCoverAPI.as_view(), name='api-book-cover'),
+
+    # Import / match
+    path('api/match/', MatchAPI.as_view(), name='api-match'),
+    path('api/import/start/', ImportStartAPI.as_view(), name='api-import-start'),
+    path('api/import/files/', DirectoryListAPI.as_view(), name='api-directory-list'),
+    path('api/asin-search/', AsinSearchAPI.as_view(), name='api-asin-search'),
+
+    # Settings & meta
+    path('api/settings/', SettingsAPI.as_view(), name='api-settings'),
+    path('api/settings/verify/', SettingsVerifyAPI.as_view(), name='api-settings-verify'),
+    path('api/versions/', VersionsAPI.as_view(), name='api-versions'),
+
+    # Users
+    path('api/users/', UsersListAPI.as_view(), name='api-users'),
+    path('api/users/<int:pk>/', UserDetailAPI.as_view(), name='api-user-detail'),
+]
+
+urlpatterns = api_patterns + [
+    re_path(r'^.*$', SPAView.as_view(), name='spa'),
 ]

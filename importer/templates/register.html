@@ -1,0 +1,74 @@
+{% extends "base_auth.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<h2 class="text-center">Register Admin User</h2>
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" value="{{ form.username.value }}" required>
+        {% if form.username.errors %}
+        <div class="alert alert-danger">
+            {{ form.username.errors }}
+        </div>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <div class="input-group">
+            <input type="password" name="password" class="form-control" id="password" value="{{ form.password.value }}" required>
+            <span class="input-group-text">
+                <i id="password-icon" class="bi bi-eye-slash-fill" onclick="togglePasswordVisibility()"></i>
+            </span>
+        </div>
+        {% if form.password.errors %}
+        <div class="alert alert-danger">
+            {{ form.password.errors }}
+        </div>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Confirm Password</label>
+        <div class="input-group">
+            <input type="password" name="password_confirm" class="form-control" id="password_confirm" value="{{ form.password_confirm.value }}" required>
+            <span class="input-group-text">
+                <i id="password-confirm-icon" class="bi bi-eye-slash-fill" onclick="togglePasswordConfirmVisibility()"></i>
+            </span>
+        </div>
+        {% if form.password_confirm.errors %}
+        <div class="alert alert-danger">
+            {{ form.password_confirm.errors }}
+        </div>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary w-100">Register</button>
+    </div>
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+</form>
+<script>
+    function togglePasswordVisibility() {
+        const passwordField = document.getElementById('password');
+        const passwordIcon = document.getElementById('password-icon');
+        const isPassword = passwordField.type === 'password';
+        passwordField.type = isPassword ? 'text' : 'password';
+        passwordIcon.classList.toggle('bi-eye-slash-fill', !isPassword);
+        passwordIcon.classList.toggle('bi-eye-fill', isPassword);
+    }
+
+    function togglePasswordConfirmVisibility() {
+        const passwordConfirmField = document.getElementById('password_confirm');
+        const passwordConfirmIcon = document.getElementById('password-confirm-icon');
+        const isPassword = passwordConfirmField.type === 'password';
+        passwordConfirmField.type = isPassword ? 'text' : 'password';
+        passwordConfirmIcon.classList.toggle('bi-eye-slash-fill', !isPassword);
+        passwordConfirmIcon.classList.toggle('bi-eye-fill', isPassword);
+    }
+</script>
+{% endblock %}

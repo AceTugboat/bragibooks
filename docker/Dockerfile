@@ -1,30 +1,60 @@
-# Base image
-FROM ghcr.io/djdembeck/m4b-merge:develop
+# Stage 1: Build the React/TypeScript frontend
+# Vite outputs to ../static/dist relative to the frontend dir,
+# so with WORKDIR / the built assets land at /static/dist
+FROM --platform=linux/amd64 node:20-alpine AS frontend-builder
 
-# Keeps Python from generating .pyc files in the container
+WORKDIR /
+COPY frontend/ ./frontend/
+RUN cd frontend && npm ci && npm run build
+
+
+# Pull amd64 uv binary explicitly so it downloads amd64 Python below
+FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:latest AS uv
+
+
+# Base image — provides m4b-merge system tools (PHP, ffmpeg)
+FROM --platform=linux/amd64 ghcr.io/djdembeck/m4b-merge:develop
+
 ENV PYTHONDONTWRITEBYTECODE=1
-
-# Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
-
-# Setup environment variable
 ENV APP_HOME=/home/app/web
 
-# Where your code lives  
+# Copy amd64 uv binary (using the named stage above ensures correct architecture)
+COPY --from=uv /uv /usr/local/bin/uv
+
+# Venv lives outside APP_HOME so the docker-compose volume mount doesn't shadow it
+ENV VIRTUAL_ENV="/app/.venv"
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Install Python to /opt so all users can access it.
+# /root/.local (the default) is only readable by root, which causes
+# su-exec to fail when it switches to the app user.
+ENV UV_PYTHON_INSTALL_DIR="/opt/uv-python"
+
+WORKDIR /app
+COPY pyproject.toml uv.lock .
+
+# Download portable Python 3.12 and install packages, then make both the
+# Python install and venv world-readable/executable for the app user.
+RUN uv venv --python 3.12 $VIRTUAL_ENV && \
+    uv sync --frozen --no-install-project && \
+    chmod -R a+rX $UV_PYTHON_INSTALL_DIR $VIRTUAL_ENV
+
+# Verify Python 3.12 + Django are working before the image is finalised
+RUN /app/.venv/bin/python -c \
+    "import sys; print('Python', sys.version); import django; print('Django', django.__version__)"
+
+# Where your code lives
 WORKDIR $APP_HOME
 
-# Copy the necessary files to the container
-COPY requirements.txt .
-
-# Run this command to install all dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Copy whole project to your docker home directory.
+# Copy whole project to your docker home directory
 COPY bragibooks_proj $APP_HOME/bragibooks_proj/
 COPY importer $APP_HOME/importer/
 COPY utils $APP_HOME/utils/
 COPY manage.py $APP_HOME
+
+# Copy built frontend assets from the node stage
+COPY --from=frontend-builder /static/dist $APP_HOME/static/dist
 
 # Copy entrypoint file
 COPY docker/entrypoint.sh /usr/local/bin/
