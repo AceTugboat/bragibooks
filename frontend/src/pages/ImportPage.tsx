@@ -25,6 +25,7 @@ const ImportPage: React.FC = () => {
     const [cards, setCards] = useState<AsinCard[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [showSelected, setShowSelected] = useState(false);
 
     useEffect(() => {
         directoryApi.getContents()
@@ -39,6 +40,7 @@ const ImportPage: React.FC = () => {
     }, []);
 
     const handleNext = useCallback(async () => {
+        setShowSelected(false);
         setError(null);
         const initial: AsinCard[] = selectedPaths.map(p => ({
             srcPath: p,
@@ -151,13 +153,63 @@ const ImportPage: React.FC = () => {
                     )}
                 </div>
 
-                {/* Sticky action bar — padding-bottom handled by CSS on mobile */}
+                {/* Slide-up selected folders drawer */}
+                {showSelected && selectedPaths.length > 0 && (
+                    <div className="import-selected-drawer">
+                        <div className="import-selected-drawer-header">
+                            <span className="fw-semibold">
+                                {selectedPaths.length} folder{selectedPaths.length !== 1 ? 's' : ''} selected
+                            </span>
+                            <button
+                                className="btn-close btn-close-white"
+                                aria-label="Close"
+                                onClick={() => setShowSelected(false)}
+                            />
+                        </div>
+                        <div className="import-selected-drawer-list">
+                            {selectedPaths.map(path => (
+                                <div key={path} className="import-selected-drawer-item">
+                                    <i className="fas fa-folder me-2" style={{ color: 'var(--color-info)' }} />
+                                    <div className="flex-grow-1 overflow-hidden">
+                                        <div className="fw-medium text-truncate">{path.split('/').pop() || path}</div>
+                                        <div className="small text-truncate" style={{ color: 'var(--color-text-tertiary)' }}>{path}</div>
+                                    </div>
+                                    <button
+                                        className="btn btn-link btn-sm p-0 ms-2 flex-shrink-0"
+                                        style={{ color: 'var(--color-danger)' }}
+                                        onClick={() => setSelectedPaths(prev => prev.filter(p => p !== path))}
+                                        aria-label="Remove"
+                                    >
+                                        <i className="fas fa-times" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="import-selected-drawer-footer">
+                            <button
+                                className="btn btn-success w-100"
+                                onClick={handleNext}
+                                disabled={loadingFiles}
+                            >
+                                Next <i className="fas fa-arrow-right ms-1" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Fixed action bar */}
                 <div className="import-action-bar">
-                    <span className="import-action-bar-label">
-                        {selectedPaths.length === 0
-                            ? 'Select folders to import'
-                            : `${selectedPaths.length} folder${selectedPaths.length !== 1 ? 's' : ''} selected`}
-                    </span>
+                    {selectedPaths.length > 0 ? (
+                        <button
+                            className="import-action-bar-label btn btn-link p-0 text-decoration-none"
+                            onClick={() => setShowSelected(prev => !prev)}
+                        >
+                            <i className={`fas fa-chevron-${showSelected ? 'down' : 'up'} me-2`} />
+                            {selectedPaths.length} folder{selectedPaths.length !== 1 ? 's' : ''} selected
+                        </button>
+                    ) : (
+                        <span className="import-action-bar-label">Select folders to import</span>
+                    )}
                     <button
                         className="btn btn-success btn-sm px-4"
                         onClick={handleNext}

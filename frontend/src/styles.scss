@@ -600,6 +600,70 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
     font-weight: var(--font-weight-medium);
+
+    // When rendered as a button
+    &.btn.btn-link {
+        color: var(--color-text-secondary);
+        &:hover { color: var(--color-text-primary); }
+    }
+}
+
+// Slide-up drawer showing selected folders
+.import-selected-drawer {
+    position: fixed;
+    left: var(--sidebar-width);
+    right: 0;
+    bottom: 64px; // sits on top of action bar
+    max-height: 50vh;
+    background-color: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border-primary);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    z-index: 195; // above file view (10), below action bar (200)
+    animation: drawerSlideUp var(--duration-normal) var(--ease-out);
+
+    @media (max-width: 768px) {
+        left: 0;
+        max-height: 65vh;
+        bottom: 60px;
+    }
+}
+
+@keyframes drawerSlideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.import-selected-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-5);
+    border-bottom: 1px solid var(--color-border-primary);
+    flex-shrink: 0;
+    color: var(--color-text-primary);
+}
+
+.import-selected-drawer-list {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.import-selected-drawer-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-3) var(--space-5);
+    border-bottom: 1px solid var(--color-border-secondary);
+    color: var(--color-text-primary);
+
+    &:last-child { border-bottom: none; }
+}
+
+.import-selected-drawer-footer {
+    padding: var(--space-3) var(--space-5);
+    border-top: 1px solid var(--color-border-primary);
+    flex-shrink: 0;
 }
 
 // ---- Form controls -----------------------------------------
