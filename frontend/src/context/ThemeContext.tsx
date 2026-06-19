@@ -13,7 +13,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [theme, setTheme] = useState<Theme>(() => {
         // Check localStorage for saved theme preference
         const savedTheme = localStorage.getItem('bragi-theme') as Theme;
-        return savedTheme || 'light';
+        return savedTheme || 'dark';
     });
 
     useEffect(() => {

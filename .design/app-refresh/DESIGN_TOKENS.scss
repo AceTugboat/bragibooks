@@ -1,0 +1,296 @@
+// ============================================================
+// Bragi Books — Design Tokens
+// Philosophy: Functional Warmth
+// Stack: Bootstrap 5 + SCSS
+// ============================================================
+//
+// USAGE RULES:
+//   - In SCSS files:  reference CSS custom properties → var(--color-bg-primary)
+//   - In Bootstrap overrides: use the raw $raw-* SCSS variables
+//   - Never hardcode a hex value in a component. Always reference a token.
+//
+// SEMANTIC COLOR ROLES (enforced — do not deviate):
+//   Gold  (#D8A13F) → informational / status / highlights — NEVER on action buttons
+//   Green (#184A3A) → success / confirm / primary constructive action (Submit, Save)
+//   Red   (#8E2F3A) → destructive / error / alert / danger — cancel, delete, error state
+//   Slate (#2C3E50) → navigation chrome — sidebar, login background
+//
+// DARK-FIRST:
+//   The [data-theme="dark"] block and the prefers-color-scheme media query
+//   are the default experience. Light mode is opt-in via [data-theme="light"].
+//   ThemeContext.tsx default should be changed from 'light' to 'dark'.
+// ============================================================
+
+@use "sass:color";
+
+// ============================================================
+// 1. RAW PALETTE
+//    Ground truth values. Reference via semantic tokens, not directly.
+// ============================================================
+
+// Brand
+$raw-burgundy:       #8E2F3A;
+$raw-burgundy-light: #C04050;   // For burgundy text/icons ON dark backgrounds (contrast)
+$raw-gold:           #D8A13F;
+$raw-gold-accessible:#A8711A;   // For gold text ON light backgrounds (4.5:1 contrast)
+$raw-green:          #184A3A;
+$raw-green-light:    #2D7A5F;   // For green text/icons ON dark backgrounds
+$raw-slate:          #2C3E50;   // Sidebar, login background (light mode)
+$raw-slate-dark:     #1A2535;   // Sidebar (dark mode) — slightly deeper
+
+// Light neutrals
+$raw-neutral-0:      #FFFFFF;
+$raw-neutral-50:     #F7F8FA;
+$raw-neutral-100:    #ECEEF2;
+$raw-neutral-200:    #DEE2E6;
+$raw-neutral-300:    #CDD2DA;
+$raw-neutral-600:    #6C757D;
+$raw-neutral-700:    #495057;
+$raw-neutral-900:    #212529;
+
+// Dark surface scale — warm-violet tint feels deliberate vs. neutral grey
+$raw-dark-0:         #0E1118;   // Deepest background
+$raw-dark-100:       #161B27;   // Card / panel background
+$raw-dark-200:       #1E2438;   // Slightly elevated surface
+$raw-dark-300:       #252C40;   // Input background, wells
+$raw-dark-400:       #323B54;   // Borders
+$raw-dark-500:       #4A556E;   // Disabled / very subtle
+
+
+// ============================================================
+// 2. BOOTSTRAP VARIABLE OVERRIDES
+//    These run before @import "bootstrap". Keep them here.
+// ============================================================
+
+// Remap Bootstrap semantic roles to our color system
+$primary:     $raw-burgundy;    // Red = destructive/primary-alert role
+$secondary:   $raw-slate;
+$success:     $raw-green;       // Green = confirm/constructive
+$warning:     $raw-gold;
+$info:        $raw-gold;
+$danger:      $raw-burgundy;
+$light:       $raw-neutral-0;
+$dark:        $raw-dark-0;
+
+$body-bg:     $raw-dark-0;      // Dark-first: body defaults to dark
+$body-color:  #E2E8F0;
+
+$card-border-color: $raw-dark-400;
+$card-cap-bg:       rgba($raw-gold, 0.08);
+
+$border-radius:    6px;
+$border-radius-sm: 4px;
+$border-radius-lg: 10px;
+
+$box-shadow-sm: 0 1px 3px rgba(0,0,0,0.30);
+$box-shadow:    0 2px 8px rgba(0,0,0,0.35);
+$box-shadow-lg: 0 8px 32px rgba(0,0,0,0.45);
+
+
+// ============================================================
+// 3. SEMANTIC CSS CUSTOM PROPERTIES — Light Mode (base)
+// ============================================================
+
+:root {
+  // Backgrounds
+  --color-bg-primary:        #{$raw-neutral-0};
+  --color-bg-secondary:      #{$raw-neutral-50};
+  --color-bg-tertiary:       #{$raw-neutral-100};
+  --color-bg-sidebar:        #{$raw-slate};
+  --color-bg-login:          #{$raw-slate};     // Full-screen bg for login/setup pages
+
+  // Text
+  --color-text-primary:      #{$raw-neutral-900};
+  --color-text-secondary:    #{$raw-neutral-700};
+  --color-text-tertiary:     #{$raw-neutral-600};
+  --color-text-inverse:      #{$raw-neutral-0};
+  --color-text-on-dark:      rgba(255, 255, 255, 0.85);
+
+  // Borders
+  --color-border-primary:    #{$raw-neutral-200};
+  --color-border-subtle:     #{$raw-neutral-100};
+  --color-border-focus:      #{$raw-gold};
+
+  // Gold — informational / status
+  --color-info:              #{$raw-gold};
+  --color-info-text:         #{$raw-gold-accessible};   // Gold text on light bg
+  --color-info-subtle:       rgba(216, 161, 63, 0.12);
+
+  // Green — success / confirm / constructive primary action
+  --color-success:           #{$raw-green};
+  --color-success-hover:     #{color.adjust($raw-green, $lightness: 8%)};
+  --color-success-text:      #{$raw-green-light};
+  --color-success-subtle:    rgba(24, 74, 58, 0.10);
+
+  // Red — destructive / error / alert
+  --color-danger:            #{$raw-burgundy};
+  --color-danger-hover:      #{color.adjust($raw-burgundy, $lightness: -8%)};
+  --color-danger-text:       #{$raw-burgundy};           // Readable on light bg
+  --color-danger-subtle:     rgba(142, 47, 58, 0.10);
+
+  // Processing status (maps to semantic roles)
+  --color-status-processing: var(--color-info);          // Gold dot/badge
+  --color-status-done:       var(--color-success);       // Green badge
+  --color-status-error:      var(--color-danger);        // Red badge
+
+  // Surfaces & overlay
+  --color-overlay:           rgba(0, 0, 0, 0.50);
+  --color-shadow:            rgba(0, 0, 0, 0.10);
+
+  // Spacing scale (4px base, maps to Bootstrap's spacer system)
+  --space-1:   0.25rem;    //  4px
+  --space-2:   0.5rem;     //  8px
+  --space-3:   0.75rem;    // 12px
+  --space-4:   1rem;       // 16px
+  --space-5:   1.5rem;     // 24px
+  --space-6:   2rem;       // 32px
+  --space-7:   3rem;       // 48px
+  --space-8:   4rem;       // 64px
+
+  // Typography
+  --font-family-body:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono:  "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+
+  --font-size-xs:   0.75rem;    // 12px
+  --font-size-sm:   0.875rem;   // 14px
+  --font-size-base: 1rem;       // 16px
+  --font-size-md:   1.125rem;   // 18px
+  --font-size-lg:   1.25rem;    // 20px
+  --font-size-xl:   1.5rem;     // 24px
+  --font-size-2xl:  1.875rem;   // 30px
+  --font-size-3xl:  2.25rem;    // 36px
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  --line-height-tight:    1.2;
+  --line-height-normal:   1.5;
+  --line-height-relaxed:  1.7;
+
+  --letter-spacing-tight:  -0.02em;
+  --letter-spacing-normal:  0;
+  --letter-spacing-wide:    0.06em;   // Labels, badges, uppercase
+
+  // Layout
+  --radius-sm:    4px;
+  --radius-md:    6px;
+  --radius-lg:    10px;
+  --radius-full:  9999px;
+
+  --shadow-sm:    0 1px 3px var(--color-shadow);
+  --shadow-md:    0 2px 8px var(--color-shadow);
+  --shadow-lg:    0 8px 32px var(--color-shadow);
+  --shadow-login: 0 12px 40px rgba(0, 0, 0, 0.35);  // Login card on dark bg
+
+  --sidebar-width: 250px;
+
+  // Motion
+  --duration-instant: 50ms;
+  --duration-fast:    150ms;
+  --duration-normal:  250ms;
+  --duration-slow:    400ms;
+
+  --ease-default:  cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:      cubic-bezier(0, 0, 0.2, 1);
+  --ease-in:       cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+
+// ============================================================
+// 4. DARK MODE OVERRIDES
+//    Applied via [data-theme="dark"] AND system preference.
+//    Dark is the default experience — light is opt-in.
+// ============================================================
+
+@mixin dark-tokens {
+  // Backgrounds
+  --color-bg-primary:     #{$raw-dark-0};
+  --color-bg-secondary:   #{$raw-dark-100};
+  --color-bg-tertiary:    #{$raw-dark-300};
+  --color-bg-sidebar:     #{$raw-slate-dark};
+  --color-bg-login:       #{$raw-slate-dark};
+
+  // Text
+  --color-text-primary:   #E2E8F0;
+  --color-text-secondary: #94A3B8;
+  --color-text-tertiary:  #64748B;
+  --color-text-inverse:   #{$raw-neutral-900};
+
+  // Borders
+  --color-border-primary: #{$raw-dark-400};
+  --color-border-subtle:  #{$raw-dark-300};
+  --color-border-focus:   #{$raw-gold};   // Gold focus ring — unchanged
+
+  // Semantic colors adjusted for dark background contrast
+  --color-info-text:      #{$raw-gold};          // Full-brightness gold fine on dark
+  --color-success-text:   #{$raw-green-light};
+  --color-danger-text:    #{$raw-burgundy-light};
+
+  // Tinted subtle backgrounds — slightly more opaque on dark
+  --color-info-subtle:    rgba(216, 161, 63, 0.15);
+  --color-success-subtle: rgba(24, 74, 58, 0.22);
+  --color-danger-subtle:  rgba(142, 47, 58, 0.22);
+
+  // Surfaces & overlay
+  --color-overlay:        rgba(0, 0, 0, 0.65);
+  --color-shadow:         rgba(0, 0, 0, 0.45);
+
+  --shadow-sm:    0 1px 3px var(--color-shadow);
+  --shadow-md:    0 2px 8px var(--color-shadow);
+  --shadow-lg:    0 8px 32px var(--color-shadow);
+  --shadow-login: 0 12px 40px rgba(0, 0, 0, 0.60);
+}
+
+[data-theme="dark"] {
+  @include dark-tokens;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    @include dark-tokens;
+  }
+}
+
+
+// ============================================================
+// 5. COMPONENT-LEVEL TOKENS
+//    Specific overrides that consume semantic tokens above.
+// ============================================================
+
+// Sidebar (always dark regardless of page theme)
+:root {
+  --sidebar-bg:              var(--color-bg-sidebar);
+  --sidebar-text:            var(--color-text-on-dark);
+  --sidebar-border:          rgba(255, 255, 255, 0.08);
+  --sidebar-item-hover-bg:   rgba(255, 255, 255, 0.10);
+  --sidebar-item-active-bg:  rgba(255, 255, 255, 0.15);
+  --sidebar-item-active-text: #FFFFFF;
+  --sidebar-active-accent:   var(--color-info);  // Gold for nested active items
+}
+
+// Status badge tokens
+:root {
+  --badge-processing-bg:    var(--color-info-subtle);
+  --badge-processing-text:  var(--color-info-text);
+  --badge-done-bg:          var(--color-success-subtle);
+  --badge-done-text:        var(--color-success-text);
+  --badge-error-bg:         var(--color-danger-subtle);
+  --badge-error-text:       var(--color-danger-text);
+}
+
+// Import sticky action bar
+:root {
+  --action-bar-bg:          var(--color-bg-secondary);
+  --action-bar-border:      var(--color-border-primary);
+  --action-bar-shadow:      0 -2px 12px var(--color-shadow);
+}
+
+// Login / Setup page full-screen background
+:root {
+  --login-page-bg:          var(--color-bg-login);     // Sidebar color — always dark
+  --login-card-bg:          var(--color-bg-secondary);
+  --login-card-shadow:      var(--shadow-login);
+}

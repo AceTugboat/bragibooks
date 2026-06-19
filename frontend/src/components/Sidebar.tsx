@@ -89,7 +89,7 @@ const Sidebar: React.FC = () => {
                                 className={`nav-link ${isActive('/import') ? 'active' : ''}`}
                                 onClick={closeSidebar}
                             >
-                                <i className="fa-solid fa-file-import"></i>
+                                <i className="fa-solid fa-folder-plus"></i>
                                 Import
                             </Link>
                         </li>
@@ -100,7 +100,7 @@ const Sidebar: React.FC = () => {
                                 className={`nav-link ${isActive('/') || location.pathname.startsWith('/books') ? 'active' : ''}`}
                                 onClick={closeSidebar}
                             >
-                                <i className="fa-solid fa-book"></i>
+                                <i className="fa-solid fa-headphones"></i>
                                 Library
                             </Link>
                         </li>
@@ -111,7 +111,7 @@ const Sidebar: React.FC = () => {
                                 className={`nav-link ${isActive('/processing') ? 'active' : ''}`}
                                 onClick={closeSidebar}
                             >
-                                <i className="fa-solid fa-spinner"></i>
+                                <i className="fa-solid fa-list-check"></i>
                                 Processing
                             </Link>
                         </li>

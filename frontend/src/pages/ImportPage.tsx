@@ -18,15 +18,11 @@ const FALLBACK_IMAGE = '/static/images/cover_not_available.jpg';
 const ImportPage: React.FC = () => {
     const navigate = useNavigate();
 
-    // Step 1 state
     const [step, setStep] = useState<1 | 2>(1);
     const [contents, setContents] = useState<FileItem[]>([]);
     const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
     const [loadingFiles, setLoadingFiles] = useState(true);
-
-    // Step 2 state
     const [cards, setCards] = useState<AsinCard[]>([]);
-
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
@@ -44,7 +40,6 @@ const ImportPage: React.FC = () => {
 
     const handleNext = useCallback(async () => {
         setError(null);
-
         const initial: AsinCard[] = selectedPaths.map(p => ({
             srcPath: p,
             searching: true,
@@ -55,8 +50,8 @@ const ImportPage: React.FC = () => {
         }));
         setCards(initial);
         setStep(2);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // Auto-search each path in parallel
         selectedPaths.forEach(async (path, i) => {
             const dirName = path.split('/').pop() || path;
             try {
@@ -68,9 +63,7 @@ const ImportPage: React.FC = () => {
                         searching: false,
                         options: results,
                         selectedAsin: results.length > 0 ? results[0].asin : '',
-                        imageUrl: results.length > 0
-                            ? (results[0].image_link?.[0] ?? FALLBACK_IMAGE)
-                            : FALLBACK_IMAGE,
+                        imageUrl: results.length > 0 ? (results[0].image_link?.[0] ?? FALLBACK_IMAGE) : FALLBACK_IMAGE,
                     };
                     return updated;
                 });
@@ -84,10 +77,7 @@ const ImportPage: React.FC = () => {
         });
     }, [selectedPaths]);
 
-    const handleBack = () => {
-        setStep(1);
-        setError(null);
-    };
+    const handleBack = () => { setStep(1); setError(null); };
 
     const handleAsinSelect = (index: number, asin: string) => {
         setCards(prev => {
@@ -136,180 +126,187 @@ const ImportPage: React.FC = () => {
         }
     };
 
+    // ── Step 1: Full-viewport file browser ──────────────────────────
     if (step === 1) {
         return (
-            <div className="row">
-                <div className="col">
-                    <div className="card">
-                        <div className="card-header">
-                            <h5 className="mb-0">Step 1 — Choose Files or Directories to Import</h5>
-                        </div>
-                        <div className="card-body p-0">
-                            {error && (
-                                <div className="alert alert-danger m-3 mb-0" role="alert">{error}</div>
-                            )}
-                            <div className="d-flex" style={{ minHeight: 400 }}>
-                                {/* File Explorer */}
-                                <div className="flex-grow-1 border-end" style={{ minWidth: 0 }}>
-                                    {loadingFiles ? (
-                                        <div className="text-center p-4">
-                                            <div className="spinner-border" role="status">
-                                                <span className="visually-hidden">Loading...</span>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <FileExplorer
-                                            rootItems={contents}
-                                            selectedPaths={selectedPaths}
-                                            onSelectionChange={setSelectedPaths}
-                                            fetchChildren={fetchChildren}
-                                        />
-                                    )}
-                                </div>
-                                {/* Selection Panel */}
-                                <div className="import-selection-panel p-3" style={{ width: 260, flexShrink: 0 }}>
-                                    <div className="fw-semibold mb-2 small text-uppercase text-muted">
-                                        Selected ({selectedPaths.length})
-                                    </div>
-                                    {selectedPaths.length === 0 ? (
-                                        <p className="text-muted small">Nothing selected yet. Check items on the left to add them.</p>
-                                    ) : (
-                                        <ul className="list-unstyled mb-0">
-                                            {selectedPaths.map(p => (
-                                                <li key={p} className="d-flex align-items-start justify-content-between gap-1 mb-2">
-                                                    <span className="small text-break">{p.split('/').pop() || p}</span>
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-link btn-sm p-0 flex-shrink-0 text-danger"
-                                                        onClick={() => setSelectedPaths(prev => prev.filter(x => x !== p))}
-                                                        title="Remove"
-                                                    >
-                                                        <i className="fas fa-times" />
-                                                    </button>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
+            <div className="import-file-view">
+                {error && (
+                    <div className="alert alert-danger mx-0 mb-0 rounded-0" role="alert">{error}</div>
+                )}
+
+                <div className="import-file-tree">
+                    {loadingFiles ? (
+                        <div className="text-center p-5">
+                            <div className="spinner-border" role="status">
+                                <span className="visually-hidden">Loading…</span>
                             </div>
                         </div>
-                        <div className="card-footer p-3">
-                            <button
-                                className="btn btn-success w-100"
-                                onClick={handleNext}
-                                disabled={loadingFiles || selectedPaths.length === 0}
-                            >
-                                Next →
-                            </button>
-                        </div>
-                    </div>
+                    ) : (
+                        <FileExplorer
+                            rootItems={contents}
+                            selectedPaths={selectedPaths}
+                            onSelectionChange={setSelectedPaths}
+                            fetchChildren={fetchChildren}
+                        />
+                    )}
+                </div>
+
+                {/* Sticky action bar — padding-bottom handled by CSS on mobile */}
+                <div className="import-action-bar">
+                    <span className="import-action-bar-label">
+                        {selectedPaths.length === 0
+                            ? 'Select folders to import'
+                            : `${selectedPaths.length} folder${selectedPaths.length !== 1 ? 's' : ''} selected`}
+                    </span>
+                    <button
+                        className="btn btn-success btn-sm px-4"
+                        onClick={handleNext}
+                        disabled={loadingFiles || selectedPaths.length === 0}
+                    >
+                        Next <i className="fas fa-arrow-right ms-1" />
+                    </button>
                 </div>
             </div>
         );
     }
 
+    // ── Step 2: ASIN match cards ─────────────────────────────────────
     return (
-        <div className="row">
-            <div className="col">
-                <form onSubmit={handleSubmit}>
-                    <div className="card">
-                        <div className="card-header d-flex align-items-center gap-2">
-                            <button
-                                type="button"
-                                className="btn btn-sm btn-outline-secondary"
-                                onClick={handleBack}
-                            >
-                                &larr; Back
-                            </button>
-                            <h5 className="mb-0">Step 2 — Match Audiobook</h5>
-                        </div>
+        <form onSubmit={handleSubmit} style={{ paddingBottom: '80px' }}>
+            <div className="d-flex align-items-center gap-2 mb-4">
+                <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={handleBack}
+                >
+                    <i className="fas fa-arrow-left me-1" /> Back
+                </button>
+                <h5 className="mb-0">Match Audiobooks</h5>
+                <span className="text-muted small ms-1">— confirm each match before submitting</span>
+            </div>
+
+            {error && (
+                <div className="alert alert-danger" role="alert">{error}</div>
+            )}
+
+            <div className="d-flex flex-column gap-3">
+                {cards.map((card, index) => (
+                    <div
+                        key={card.srcPath}
+                        className="card"
+                        style={{ border: '1px solid var(--color-border-primary)' }}
+                    >
                         <div className="card-body">
-                            {error && (
-                                <div className="alert alert-danger" role="alert">{error}</div>
-                            )}
-                            {cards.map((card, index) => (
-                                <div key={card.srcPath} className="row mb-4 pb-4 border-bottom">
-                                    <div className="col-auto text-center">
-                                        <img
-                                            src={card.imageUrl}
-                                            alt={card.srcPath.split('/').pop()}
-                                            style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 8 }}
-                                            onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }}
-                                        />
+                            <div className="d-flex gap-3 align-items-start">
+                                {/* Cover */}
+                                <div className="flex-shrink-0">
+                                    <img
+                                        src={card.imageUrl}
+                                        alt=""
+                                        style={{
+                                            width: 80,
+                                            height: 80,
+                                            objectFit: 'cover',
+                                            borderRadius: 'var(--radius-md)',
+                                            display: 'block',
+                                        }}
+                                        onError={e => { e.currentTarget.src = FALLBACK_IMAGE; }}
+                                    />
+                                </div>
+
+                                {/* Details */}
+                                <div className="flex-grow-1 min-width-0">
+                                    <div
+                                        className="fw-semibold small text-truncate mb-2"
+                                        title={card.srcPath}
+                                        style={{ color: 'var(--color-text-secondary)' }}
+                                    >
+                                        <i className="fas fa-folder me-1 opacity-50" />
+                                        {card.srcPath.split('/').pop() || card.srcPath}
                                     </div>
-                                    <div className="col d-flex flex-column justify-content-center gap-2">
-                                        <div className="fw-bold text-break small">
-                                            {card.srcPath.split('/').pop()}
+
+                                    {card.searching ? (
+                                        <div className="d-flex align-items-center gap-2 text-muted small">
+                                            <div className="spinner-border spinner-border-sm" role="status" />
+                                            Searching Audible…
                                         </div>
-                                        {card.searching ? (
-                                            <div className="d-flex align-items-center gap-2">
-                                                <div className="spinner-border spinner-border-sm" role="status" />
-                                                <span className="text-muted small">Searching Audible…</span>
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                <label className="form-label fw-semibold mb-1">Match</label>
-                                                <select
-                                                    className="form-select form-select-sm"
-                                                    value={card.selectedAsin}
-                                                    onChange={e => handleAsinSelect(index, e.target.value)}
-                                                >
-                                                    {card.options.length === 0 && (
-                                                        <option value="" disabled>No results found</option>
-                                                    )}
-                                                    {card.options.map(opt => (
-                                                        <option key={opt.asin} value={opt.asin}>
-                                                            {opt.title} — {opt.author}{opt.narrator ? ` / ${opt.narrator}` : ''} ({opt.asin})
-                                                        </option>
-                                                    ))}
-                                                    <option value="">Enter manually…</option>
-                                                </select>
-                                            </div>
-                                        )}
-                                        {(card.selectedAsin === '' || card.options.length === 0) && (
-                                            <div>
-                                                <label className="form-label small mb-1">
-                                                    ASIN <span className="text-muted">(10 characters)</span>
-                                                </label>
+                                    ) : (
+                                        <div className="d-flex flex-column gap-2">
+                                            <select
+                                                className="form-select form-select-sm"
+                                                value={card.selectedAsin}
+                                                onChange={e => handleAsinSelect(index, e.target.value)}
+                                            >
+                                                {card.options.length === 0 && (
+                                                    <option value="" disabled>No results found</option>
+                                                )}
+                                                {card.options.map(opt => (
+                                                    <option key={opt.asin} value={opt.asin}>
+                                                        {opt.title} — {opt.author}
+                                                        {opt.narrator ? ` / ${opt.narrator}` : ''}
+                                                    </option>
+                                                ))}
+                                                <option value="">Enter ASIN manually…</option>
+                                            </select>
+
+                                            {(card.selectedAsin === '' || card.options.length === 0) && (
                                                 <input
                                                     className="form-control form-control-sm"
                                                     type="text"
-                                                    placeholder="e.g. B001234567"
+                                                    placeholder="ASIN — 10 characters (e.g. B001234567)"
                                                     maxLength={10}
                                                     value={card.manualAsin}
                                                     onChange={e => handleManualAsinChange(index, e.target.value)}
                                                 />
-                                            </div>
-                                        )}
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-outline-danger align-self-start"
-                                            onClick={() => handleRemove(index)}
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                            ))}
-                            {cards.length === 0 && (
-                                <div className="text-muted text-center py-4">
-                                    All items removed. <button type="button" className="btn btn-link p-0" onClick={handleBack}>Go back</button> to select files.
-                                </div>
-                            )}
-                        </div>
-                        <div className="card-footer">
-                            <button
-                                className="btn btn-success w-100"
-                                type="submit"
-                                disabled={!canSubmit || submitting}
-                            >
-                                {submitting ? 'Submitting…' : 'Submit'}
-                            </button>
+
+                                {/* Remove */}
+                                <button
+                                    type="button"
+                                    className="btn btn-link btn-sm p-0 flex-shrink-0"
+                                    style={{ color: 'var(--color-danger)', lineHeight: 1 }}
+                                    onClick={() => handleRemove(index)}
+                                    title="Remove"
+                                >
+                                    <i className="fas fa-times" />
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </form>
+                ))}
+
+                {cards.length === 0 && (
+                    <div className="text-muted text-center py-5">
+                        All items removed.{' '}
+                        <button type="button" className="btn btn-link p-0" onClick={handleBack}>
+                            Go back
+                        </button>{' '}
+                        to select folders.
+                    </div>
+                )}
             </div>
-        </div>
+
+            {/* Sticky submit bar */}
+            <div className="import-action-bar">
+                <span className="import-action-bar-label">
+                    {cards.length} book{cards.length !== 1 ? 's' : ''} to process
+                </span>
+                <button
+                    type="submit"
+                    className="btn btn-success btn-sm px-4"
+                    disabled={!canSubmit || submitting}
+                >
+                    {submitting ? (
+                        <><span className="spinner-border spinner-border-sm me-2" role="status" />Submitting…</>
+                    ) : (
+                        <>Submit {cards.length > 0 ? cards.length : ''} <i className="fas fa-arrow-right ms-1" /></>
+                    )}
+                </button>
+            </div>
+        </form>
     );
 };
 
