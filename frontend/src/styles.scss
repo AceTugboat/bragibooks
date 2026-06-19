@@ -546,7 +546,11 @@ $btn-primary-hover-border: color.adjust($raw-burgundy, $lightness: -10%);
 .import-file-view {
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 80px); // below page header
+    height: calc(100vh - 4rem); // viewport minus main-content top + bottom padding (2rem each)
+
+    @media (max-width: 768px) {
+        height: calc(100vh - 80px - 2rem); // mobile top nav (80px) + bottom padding
+    }
 }
 
 .import-file-tree {
