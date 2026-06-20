@@ -15,6 +15,9 @@ FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:latest AS uv
 # Base image — provides m4b-merge system tools (PHP, ffmpeg)
 FROM --platform=linux/amd64 ghcr.io/djdembeck/m4b-merge:develop
 
+# Pull in Alpine security patches for base-image packages
+RUN apk upgrade --no-cache
+
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV APP_HOME=/home/app/web
@@ -38,6 +41,7 @@ COPY pyproject.toml uv.lock .
 # Python install and venv world-readable/executable for the app user.
 RUN uv venv --python 3.12 $VIRTUAL_ENV && \
     uv sync --frozen --no-install-project && \
+    uv pip install --upgrade pip setuptools && \
     chmod -R a+rX $UV_PYTHON_INSTALL_DIR $VIRTUAL_ENV
 
 # Verify Python 3.12 + Django are working before the image is finalised

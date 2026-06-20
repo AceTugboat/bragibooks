@@ -1,6 +1,6 @@
 <p align="center">
   <a href="" rel="noopener">
-  <img width=200px height=200px src="docs/BragiLogo.png?raw=true" alt="Project logo"></a>
+  <img width=200px height=200px src="https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/BragiLogo.png" alt="Project logo"></a>
 </p>
 
 <h3 align="center">Bragibooks</h3>
@@ -44,17 +44,15 @@ The workflow is a simple 3-step process:
 
 Login Page            |  Import Selection
 :-------------------------:|:-------------------------:
-![Login Page](docs/screenshots/Login_Page.png) | ![Import Page](docs/screenshots/Import_Page.png) 
+![Login Page](https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/screenshots/Login_Page.png) | ![Import Page](https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/screenshots/Import_Page.png)
 
 Audiobook Match            |  Processing Queue
 :-------------------------:|:-------------------------:
-![Match Page](docs/screenshots/Audiobook_Match_Page.png) | ![Processing Page](docs/screenshots/Processing_Queue_Page.png)
+![Match Page](https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/screenshots/Audiobook_Match_Page.png) | ![Processing Page](https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/screenshots/Processing_Queue_Page.png)
 
 Library            |  Book Detail
 :-------------------------:|:-------------------------:
-![Library Page](docs/screenshots/Library_Page.png) | ![Book Detail Page](docs/screenshots/Book_Detail_Page.png)
-
-
+![Library Page](https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/screenshots/Library_Page.png) | ![Book Detail Page](https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/screenshots/Book_Detail_Page.png)
 
 ## Getting Started <a name = "getting_started"></a>
 
