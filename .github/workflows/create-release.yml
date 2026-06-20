@@ -4,11 +4,16 @@ on:
     workflow_dispatch:
         inputs:
             version:
-                description: 'Version to release (semver, no "v" prefix — e.g. 2.1.0)'
+                description: 'Version (no "v" prefix — e.g. 2.1.0  or  2.1.0-beta.1  or  2.1.0-rc.2)'
                 required: true
                 type: string
+            branch:
+                description: 'Branch to tag (e.g. main, develop, release/2.1)'
+                required: false
+                default: 'main'
+                type: string
             prerelease:
-                description: 'Mark as pre-release'
+                description: 'Mark as pre-release (auto-set when version contains a suffix like -beta or -rc)'
                 required: false
                 default: false
                 type: boolean
@@ -21,23 +26,32 @@ jobs:
             contents: write
 
         steps:
-            - name: Check out the repo
-              uses: actions/checkout@v4
-
-            - name: Validate version format
+            - name: Validate inputs
               env:
                   VERSION: ${{ github.event.inputs.version }}
+                  BRANCH: ${{ github.event.inputs.branch }}
               run: |
-                  if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-                      echo "Error: version must be semver format with no leading 'v' (e.g. 2.1.0)"
+                  # Semver with optional pre-release suffix: 2.1.0 or 2.1.0-beta.1 or 2.1.0-rc.2
+                  if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?$'; then
+                      echo "Error: version must be semver format (e.g. 2.1.0 or 2.1.0-beta.1)"
                       exit 1
                   fi
+                  # Branch name: allow letters, digits, /, -, _, .
+                  if ! echo "$BRANCH" | grep -qE '^[a-zA-Z0-9/_.-]+$'; then
+                      echo "Error: branch name contains invalid characters"
+                      exit 1
+                  fi
+
+            - name: Check out the repo
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.inputs.branch }}
 
             - name: Create tag and GitHub release
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   VERSION: ${{ github.event.inputs.version }}
-                  PRERELEASE: ${{ github.event.inputs.prerelease }}
+                  PRERELEASE_INPUT: ${{ github.event.inputs.prerelease }}
               run: |
                   TAG="v${VERSION}"
                   git config user.name "github-actions[bot]"
@@ -45,13 +59,14 @@ jobs:
                   git tag "$TAG"
                   git push origin "$TAG"
 
+                  # Auto-mark as pre-release if the version string contains a suffix (-beta, -rc, etc.)
+                  # The checkbox can also force pre-release for a clean version number.
                   PRERELEASE_FLAG=""
-                  if [ "$PRERELEASE" = "true" ]; then
+                  if echo "$VERSION" | grep -q '-' || [ "$PRERELEASE_INPUT" = "true" ]; then
                       PRERELEASE_FLAG="--prerelease"
                   fi
 
-                  # --generate-notes uses GitHub's auto-generated release notes
-                  # Pushing the tag above will also trigger docker-publish.yml automatically
+                  # Pushing the tag above automatically triggers docker-publish.yml
                   gh release create "$TAG" \
                       --title "$TAG" \
                       --generate-notes \

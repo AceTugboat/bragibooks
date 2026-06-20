@@ -3,10 +3,8 @@ name: Publish Docker image
 on:
     workflow_dispatch:
     push:
-        branches:
-            - main
-            - develop
-        # Publish semver tags as releases.
+        # Only publish on explicit version tags — branch pushes do not trigger a release.
+        # Use the "Create Release" workflow to tag and publish.
         tags: ['v*.*.*']
 
 jobs:
@@ -44,12 +42,11 @@ jobs:
                   flavor: |
                       latest=auto
                   tags: |
-                      # semver tag v2.1.0 → image tags 2.1.0 / 2.1 / 2 / latest
+                      # stable release v2.1.0 → 2.1.0 / 2.1 / 2 / latest
                       type=semver,pattern={{version}}
                       type=semver,pattern={{major}}.{{minor}}
                       type=semver,pattern={{major}}
-                      # branch pushes → main / develop
-                      type=ref,event=branch
+                      # pre-release v2.1.0-beta.1 → 2.1.0-beta.1 only (no latest / major / minor)
 
             - name: Build and push Docker images
               uses: docker/build-push-action@a8d35412fb758de9162fd63e3fa3f0942bdedb4d
@@ -61,7 +58,7 @@ jobs:
                   labels: ${{ steps.meta.outputs.labels }}
 
             - name: Update Docker Hub Description
-              if: github.ref == 'refs/heads/main'
+              if: "!contains(github.ref, '-')"
               uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5
               with:
                 username: ${{ secrets.DOCKER_USERNAME }}
