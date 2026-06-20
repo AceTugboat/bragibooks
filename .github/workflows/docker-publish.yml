@@ -40,6 +40,16 @@ jobs:
                   images: |
                       ${{ secrets.DOCKER_USERNAME }}/bragibooks
                       ghcr.io/${{ github.repository }}
+                  # latest=auto: sets "latest" only on semver tag pushes, not branch pushes
+                  flavor: |
+                      latest=auto
+                  tags: |
+                      # semver tag v2.1.0 → image tags 2.1.0 / 2.1 / 2 / latest
+                      type=semver,pattern={{version}}
+                      type=semver,pattern={{major}}.{{minor}}
+                      type=semver,pattern={{major}}
+                      # branch pushes → main / develop
+                      type=ref,event=branch
 
             - name: Build and push Docker images
               uses: docker/build-push-action@a8d35412fb758de9162fd63e3fa3f0942bdedb4d

@@ -1,0 +1,58 @@
+name: Create Release
+
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version to release (semver, no "v" prefix — e.g. 2.1.0)'
+                required: true
+                type: string
+            prerelease:
+                description: 'Mark as pre-release'
+                required: false
+                default: false
+                type: boolean
+
+jobs:
+    create-release:
+        name: Tag and publish release
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+
+        steps:
+            - name: Check out the repo
+              uses: actions/checkout@v4
+
+            - name: Validate version format
+              env:
+                  VERSION: ${{ github.event.inputs.version }}
+              run: |
+                  if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+                      echo "Error: version must be semver format with no leading 'v' (e.g. 2.1.0)"
+                      exit 1
+                  fi
+
+            - name: Create tag and GitHub release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  VERSION: ${{ github.event.inputs.version }}
+                  PRERELEASE: ${{ github.event.inputs.prerelease }}
+              run: |
+                  TAG="v${VERSION}"
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git tag "$TAG"
+                  git push origin "$TAG"
+
+                  PRERELEASE_FLAG=""
+                  if [ "$PRERELEASE" = "true" ]; then
+                      PRERELEASE_FLAG="--prerelease"
+                  fi
+
+                  # --generate-notes uses GitHub's auto-generated release notes
+                  # Pushing the tag above will also trigger docker-publish.yml automatically
+                  gh release create "$TAG" \
+                      --title "$TAG" \
+                      --generate-notes \
+                      $PRERELEASE_FLAG
