@@ -25,6 +25,7 @@
 ## Table of Contents
 
 - [About & Usage](#about)
+- [Migrating from djdembeck/bragibooks](#migrating)
 - [Getting Started](#getting_started)
 - [Database](#database)
 - [Passkeys](#passkeys)
@@ -53,6 +54,58 @@ Audiobook Match            |  Processing Queue
 Library            |  Book Detail
 :-------------------------:|:-------------------------:
 ![Library Page](https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/screenshots/Library_Page.png) | ![Book Detail Page](https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/screenshots/Book_Detail_Page.png)
+
+
+
+
+## Migrating from djdembeck/bragibooks <a name = "migrating"></a>
+
+This project is a fork of [djdembeck/bragibooks](https://github.com/djdembeck/bragibooks). If you're switching over, here's what changed and what to do.
+
+### 1. Update the image name
+
+```
+ghcr.io/djdembeck/bragibooks:main  →  acetugboat/bragibooks:main
+```
+
+### 2. Update volume mount paths
+
+The container's internal paths changed:
+
+| Purpose | djdembeck | AceTugboat |
+| :---: | :---: | :---: |
+| Input files | `/input` | `/downloads` |
+| Output files | `/output` | `/audiobooks` |
+| Config / DB | `/config` | `/config` (unchanged) |
+
+The `/done` archive mount is removed. The archive directory is now configured inside the app under **Settings → Archive directory**.
+
+> **Note:** The database stores the full path to each book's input and output files. After remounting volumes at new paths, existing library entries will point to the old paths — you may need to reprocess affected books to rebuild the output files.
+
+### 3. Remove Redis and Celery
+
+The upstream version required a Redis container and Celery for background processing. This fork replaces that with `django-tasks-db` — **no Redis needed**. Remove any Redis service from your compose file and drop the `CELERY_WORKERS` env var.
+
+The worker is now the same image run in a different mode:
+- Single container: add `RUN_WORKER=true` to your environment
+- Separate containers: run a second container with `command: worker`
+
+### 4. Update env vars
+
+| Old | New | Notes |
+| :---: | :---: | --- |
+| `CELERY_WORKERS=N` | `RUN_WORKER=true` | Concurrency is set in the Settings UI |
+| `CSRF_TRUSTED_ORIGINS` | `HOSTED_DOMAIN` | One var sets CORS, CSRF, and allowed origins |
+
+### 5. Database
+
+Your existing SQLite file at `/config/db.sqlite3` works as-is — just point the `/config` volume at the same location. Django migrations run automatically on startup and add new columns/tables without touching existing data.
+
+### 6. First-run login screen
+
+The upstream version had no authentication. This fork requires a username and password. On first boot you'll be taken to a one-time setup screen to create your account before accessing the app.
+
+---
 
 ## Getting Started <a name = "getting_started"></a>
 
