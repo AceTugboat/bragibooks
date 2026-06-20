@@ -13,3 +13,7 @@ demo/
 admin/
 .idea
 .design/
+*.egg-info/
+build/
+frontend/.vite/
+tasks/
