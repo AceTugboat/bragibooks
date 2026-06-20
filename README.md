@@ -54,8 +54,6 @@ Library            |  Book Detail
 :-------------------------:|:-------------------------:
 ![Library Page](https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/screenshots/Library_Page.png) | ![Book Detail Page](https://raw.githubusercontent.com/AceTugboat/bragibooks/main/docs/screenshots/Book_Detail_Page.png)
 
-
-
 ## Getting Started <a name = "getting_started"></a>
 
 ### Prerequisites
