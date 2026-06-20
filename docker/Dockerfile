@@ -15,8 +15,11 @@ FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:latest AS uv
 # Base image — provides m4b-merge system tools (PHP, ffmpeg)
 FROM --platform=linux/amd64 ghcr.io/djdembeck/m4b-merge:develop
 
-# Pull in Alpine security patches for base-image packages
-RUN apk upgrade --no-cache
+# Pull in Alpine security patches and upgrade system pip/setuptools
+# (base image ships setuptools 65.5.0 which has several HIGH CVEs)
+RUN apk upgrade --no-cache && \
+    pip install --upgrade pip setuptools 2>/dev/null || \
+    pip3 install --upgrade pip setuptools 2>/dev/null || true
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
