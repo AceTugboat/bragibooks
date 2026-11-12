@@ -157,6 +157,9 @@ DJANGO_VITE_DEV_MODE = DEBUG
 DJANGO_VITE_DEV_SERVER_PORT = 5173
 DJANGO_VITE_DEV_SERVER_HOST = 'localhost'
 DJANGO_VITE_MANIFEST_PATH = os.path.join(DJANGO_VITE_ASSETS_PATH, 'manifest.json')
+# Vite emits manifest paths relative to outDir (static/dist), so asset URLs
+# need the 'dist' prefix; django-vite 3.x ignores DJANGO_VITE_ASSETS_PATH.
+DJANGO_VITE_STATIC_URL_PREFIX = 'dist'
 
 # Logging
 # Set environment variable DJANGO_LOG_LEVEL to desired level
