@@ -13,7 +13,13 @@ FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:latest AS uv
 
 
 # Base image — provides m4b-merge system tools (PHP, ffmpeg)
-FROM --platform=linux/amd64 ghcr.io/djdembeck/m4b-merge:develop
+# Pinned: m4b-merge v1.0.0+ dropped m4b-tool and runs as non-root, which
+# breaks this image. This digest is a known-compatible build (nightly, 2025-05-26).
+FROM --platform=linux/amd64 ghcr.io/djdembeck/m4b-merge:nightly@sha256:6dab88d9f412c67e3b5b29df7af539483a6d7eed7d11a9e91c26ef865e72b515
+
+# entrypoint.sh drops root via su-exec; the pinned base does not ship it
+RUN apk add --no-cache su-exec
+
 
 # Pull in Alpine security patches and upgrade system pip/setuptools
 # (base image ships setuptools 65.5.0 which has several HIGH CVEs)
