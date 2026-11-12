@@ -1,6 +1,6 @@
 [project]
 name = "bragibooks"
-version = "2.0.0"
+version = "2.0.1"
 requires-python = ">=3.12"
 dependencies = [
     "dj-database-url>=2.0",

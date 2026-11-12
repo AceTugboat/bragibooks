@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.1](https://github.com/AceTugboat/bragibooks/compare/v2.0.0...v2.0.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* blank page in production and broken Docker build ([#80](https://github.com/AceTugboat/bragibooks/issues/80)) ([7bd7297](https://github.com/AceTugboat/bragibooks/commit/7bd7297bc38bdfd792d5fd1658979df42d83493d))
+
 ## [2.0.0](https://github.com/AceTugboat/bragibooks/compare/v1.2.3...v2.0.0) (2026-06-19)
 
 
